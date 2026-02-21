@@ -272,35 +272,41 @@ async function fetchAndClassify(url) {
   // ── ARXIV/GENERAL: fetch title + content for classification ──────────────────
   let rawText = '';
   if(!vid) {
-    if(isArxiv) {
-      // arXiv Atom API allows direct fetch (no CORS restriction)
-      const arxivId = (url.match(/arxiv\.org\/(?:abs|pdf)\/([0-9.v]+)/)?.[1] || '');
-      if(arxivId) {
-        try {
-          const r = await fetch('https://export.arxiv.org/api/query?id_list=' + arxivId);
-          if(r.ok) {
-            const body = await r.text();
+    const fetchUrl = isArxiv
+      ? 'https://export.arxiv.org/api/query?id_list=' + (url.match(/arxiv\.org\/(?:abs|pdf)\/([0-9.v]+)/)?.[1] || '')
+      : url;
+
+    const proxies = [
+      { u: 'https://corsproxy.io/?' + encodeURIComponent(fetchUrl),                   json: false },
+      { u: 'https://api.allorigins.win/get?url=' + encodeURIComponent(fetchUrl),      json: true  },
+      { u: 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(fetchUrl), json: false },
+    ];
+
+    for(const proxy of proxies) {
+      try {
+        const r = await fetch(proxy.u);
+        if(!r.ok) continue;
+        const body = proxy.json ? ((await r.json()).contents || '') : await r.text();
+        if(!body || body.length < 50) continue;
+
+        if(isArxiv) {
+          // Try Atom XML format first (from export.arxiv.org API)
+          if(body.includes('<entry>')) {
             const entry    = (body.match(/<entry>[\s\S]*?<\/entry>/i) || [''])[0];
             const titleM   = entry.match(/<title>([^<]{4,300})<\/title>/i);
             const summaryM = entry.match(/<summary>([\s\S]{10,2000})<\/summary>/i);
             const t = titleM?.[1]?.replace(/\s+/g,' ').replace(/&amp;/g,'&').trim();
-            if(t) { htmlTitle = t; rawText = summaryM?.[1]?.replace(/\s+/g,' ').trim().slice(0,1000) || ''; }
+            if(t) { htmlTitle = t; rawText = summaryM?.[1]?.replace(/\s+/g,' ').trim().slice(0,1000) || ''; break; }
           }
-        } catch(e) { console.warn('arxiv direct fetch failed:', e.message); }
-      }
-    } else {
-      // General pages — try proxies in order
-      const proxies = [
-        { u: 'https://api.allorigins.win/get?url=' + encodeURIComponent(url), json: true  },
-        { u: 'https://corsproxy.io/?' + encodeURIComponent(url),              json: false },
-        { u: 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url), json: false },
-      ];
-      for(const proxy of proxies) {
-        try {
-          const r = await fetch(proxy.u);
-          if(!r.ok) continue;
-          const body = proxy.json ? ((await r.json()).contents || '') : await r.text();
-          if(!body || body.length < 50) continue;
+          // Fallback: parse as HTML abs page (some proxies return this instead)
+          const ogTM = body.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']{2,300})["']/i)
+                    || body.match(/<meta[^>]+content=["']([^"']{2,300})["'][^>]+property=["']og:title["']/i);
+          const ttlM = body.match(/<title[^>]*>([^<]{2,300})<\/title>/i);
+          const h1M  = body.match(/<h1[^>]*class="[^"]*title[^"]*"[^>]*>[\s\S]*?<\/span>\s*([\s\S]{4,300}?)\s*<\/h1>/i);
+          const t    = (ogTM?.[1]) || (h1M?.[1]) || (ttlM?.[1]?.replace(/^\[.*?\]\s*/,''));
+          if(t) { htmlTitle = t.replace(/&amp;/g,'&').replace(/\s+/g,' ').trim(); break; }
+          // nothing found in this proxy, try next
+        } else {
           const ogTM = body.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']{2,300})["']/i)
                     || body.match(/<meta[^>]+content=["']([^"']{2,300})["'][^>]+property=["']og:title["']/i);
           const twTM = body.match(/<meta[^>]+(?:name|property)=["']twitter:title["'][^>]+content=["']([^"']{2,300})["']/i)
@@ -317,15 +323,15 @@ async function fetchAndClassify(url) {
           rawText = body.replace(/<script[\s\S]*?<\/script>/gi,'').replace(/<style[\s\S]*?<\/style>/gi,'')
                         .replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').slice(0,2000).trim();
           if(htmlTitle) break;
-        } catch(e) { console.warn('proxy failed:', proxy.u, e.message); }
-      }
-      // Microlink fallback for thumbnail
-      if(!ogImage) {
-        try {
-          const r = await fetch('https://api.microlink.io/?url=' + encodeURIComponent(url));
-          if(r.ok) { const d = await r.json(); if(d.status==='success') { const img=d.data?.image?.url||d.data?.screenshot?.url; if(img) ogImage=proxyThumb(img); } }
-        } catch {}
-      }
+        }
+      } catch(e) { console.warn('proxy failed:', proxy.u, e.message); }
+    }
+
+    if(!ogImage && !isArxiv) {
+      try {
+        const r = await fetch('https://api.microlink.io/?url=' + encodeURIComponent(url));
+        if(r.ok) { const d = await r.json(); if(d.status==='success') { const img=d.data?.image?.url||d.data?.screenshot?.url; if(img) ogImage=proxyThumb(img); } }
+      } catch {}
     }
   }
 
