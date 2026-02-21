@@ -264,7 +264,7 @@ async function fetchAndClassify(url) {
   if(vid) {
     ogImage = proxyThumb('https://img.youtube.com/vi/' + vid + '/sddefault.jpg');
     try {
-      const r = await fetch('https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=' + vid + '&format=json', { signal: AbortSignal.timeout(5000) });
+      const r = await fetch('https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=' + vid + '&format=json');
       if(r.ok) { const d = await r.json(); htmlTitle = d.title || null; }
     } catch {}
   }
@@ -285,7 +285,7 @@ async function fetchAndClassify(url) {
 
     for(const proxy of proxies) {
       try {
-        const r = await fetch(proxy.u, { signal: AbortSignal.timeout(7000) });
+        const r = await fetch(proxy.u);
         if(!r.ok) continue;
         const body = proxy.json ? ((await r.json()).contents || '') : await r.text();
         if(!body || body.length < 50) continue;
@@ -322,60 +322,66 @@ async function fetchAndClassify(url) {
     // Microlink fallback for thumbnail on general pages
     if(!ogImage && !isArxiv) {
       try {
-        const r = await fetch('https://api.microlink.io/?url=' + encodeURIComponent(url), { signal: AbortSignal.timeout(5000) });
+        const r = await fetch('https://api.microlink.io/?url=' + encodeURIComponent(url));
         if(r.ok) { const d = await r.json(); if(d.status==='success') { const img=d.data?.image?.url||d.data?.screenshot?.url; if(img) ogImage=proxyThumb(img); } }
       } catch {}
     }
   }
 
-  // ── LLM: use web_search tool so it can fetch the actual page ─────────────────
+  // ── LLM CLASSIFY ─────────────────────────────────────────────────────────────
   if(apiKey) {
-    // If we already have a good title + abstract, just classify (no search needed)
-    // If not, use web_search to fetch the real content
-    const hasContent = htmlTitle && rawText.length > 50;
+    const titleForPrompt = htmlTitle || url;
+    const contentForPrompt = rawText.slice(0, 1500);
 
-    const prompt = hasContent
-      ? `Classify this for a research library.
-URL: ${url}
-Title: ${htmlTitle}
-Abstract/content: ${rawText.slice(0,1500)}
-
-Pick the best category and subcategory. Respond ONLY with JSON:
-{"title":"${htmlTitle.replace(/"/g,"'")}","description":"1-2 sentence summary","category":"physics|mathematics|computer_science|philosophy|art|economics","subcategory":"best match or null"}`
-
-      : `Fetch and classify this URL for a research library: ${url}
-Use the web_search tool to look up this URL and find its title, abstract/description, and topic.
-Then respond ONLY with JSON (no other text):
-{"title":"exact title","description":"1-2 sentence summary","category":"physics|mathematics|computer_science|philosophy|art|economics","subcategory":"best match or null"}`;
-
-    const tools = hasContent ? [] : [{ type: 'web_search_20250305', name: 'web_search' }];
-    const validSubcats = 'physics: Quantum Computing|Particle Physics|Condensed Matter|Astrophysics|Quantum Field Theory|Statistical Mechanics|General Relativity|Optics & Photonics | math: Number Theory|Topology|Analysis|Algebra|Combinatorics|Probability & Statistics|Logic & Foundations|Differential Geometry | cs: Machine Learning|Algorithms|Systems|Theoretical CS|Distributed Systems|Computer Vision|NLP|Cryptography|Databases | philosophy: Philosophy of Mind|Epistemology|Ethics|Metaphysics|Philosophy of Science|Logic|Political Philosophy|Aesthetics | art: Visual Art|Music Theory|Literature|Film|Architecture|Design|History of Art|Digital Art | economics: Microeconomics|Macroeconomics|Behavioral Economics|Game Theory|Finance|Political Economy|Development Economics|Econometrics';
+    const contentLine = contentForPrompt ? ('Content: ' + contentForPrompt) : '';
+    const prompt = [
+      'You are classifying a link for a personal research library.',
+      'URL: ' + url,
+      'Title: ' + titleForPrompt,
+      contentLine,
+      'CATEGORIES (use exact spelling):',
+      'physics: Quantum Computing, Particle Physics, Condensed Matter, Astrophysics, Quantum Field Theory, Statistical Mechanics, General Relativity, Optics and Photonics',
+      'mathematics: Number Theory, Topology, Analysis, Algebra, Combinatorics, Probability and Statistics, Logic and Foundations, Differential Geometry',
+      'computer_science: Machine Learning, Algorithms, Systems, Theoretical CS, Distributed Systems, Computer Vision, NLP, Cryptography, Databases',
+      'philosophy: Philosophy of Mind, Epistemology, Ethics, Metaphysics, Philosophy of Science, Logic, Political Philosophy, Aesthetics',
+      'art: Visual Art, Music Theory, Literature, Film, Architecture, Design, History of Art, Digital Art',
+      'economics: Microeconomics, Macroeconomics, Behavioral Economics, Game Theory, Finance, Political Economy, Development Economics, Econometrics',
+      'Respond with ONLY valid JSON, no markdown: {"title":"...","description":"one sentence","category":"...","subcategory":"... or null}'
+    ].filter(Boolean).join('\n');
 
     try {
-      const body = { model: 'claude-haiku-4-5-20251001', max_tokens: 800, messages: [{ role: 'user', content: prompt + (hasContent ? '\n\nValid subcategories — ' + validSubcats : '\n\nValid subcategories — ' + validSubcats) }] };
-      if(tools.length) body.tools = tools;
-
       const r = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-        body: JSON.stringify(body)
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 300,
+          messages: [{ role: 'user', content: prompt }]
+        })
       });
       if(r.ok) {
         const d = await r.json();
-        // Collect all text blocks (web_search may add tool_use + tool_result blocks before final text)
-        const textBlocks = (d.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n');
-        const jsonM = textBlocks.match(/\{[\s\S]*\}/);
+        console.log('Claude raw response:', JSON.stringify(d.content));
+        const text = (d.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+        const jsonM = text.match(/\{[\s\S]*\}/);
         if(jsonM) {
           const p = JSON.parse(jsonM[0]);
-          return {
-            title:       htmlTitle || p.title || null,
-            description: p.description || null,
-            thumb:       ogImage || null,
-            cat:         VALID_CATS.includes(p.category) ? p.category : autoClassify(url, rawText, htmlTitle||'').cat,
-            sub:         (p.subcategory && VALID_SUBS[p.category]?.includes(p.subcategory)) ? p.subcategory : null,
-            type
-          };
+          const cat = VALID_CATS.includes(p.category) ? p.category : null;
+          const sub = cat && p.subcategory && VALID_SUBS[cat]?.includes(p.subcategory) ? p.subcategory : null;
+          if(cat) {
+            console.log('Classified:', cat, '→', sub);
+            return { title: htmlTitle || p.title || null, description: p.description || null, thumb: ogImage || null, cat, sub, type };
+          }
         }
+        console.warn('Bad Claude response:', text);
+      } else {
+        const err = await r.text();
+        console.warn('Claude API error:', r.status, err);
       }
     } catch(e) { console.warn('LLM classify failed:', e); }
   }
