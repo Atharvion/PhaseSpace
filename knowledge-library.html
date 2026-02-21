@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>phasespace</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&family=IBM+Plex+Serif:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0d0f;--bg2:#111115;--bg3:#16161c;--bg4:#1c1c24;
+  --border:#2a2a35;--border2:#353545;
+  --text:#c8c8d4;--text2:#8888a0;--text3:#555568;
+  --accent:#5a7fa8;--accent2:#3a5f88;
+  --mono:'IBM Plex Mono',monospace;
+  --serif:'IBM Plex Serif',serif;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:13px;line-height:1.6;min-height:100vh}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2)}
+.app{display:flex;flex-direction:column;min-height:100vh}
+.main{display:flex;flex:1;min-height:0}
+
+/* HEADER */
+.header{border-bottom:1px solid var(--border);padding:18px 28px 14px;background:var(--bg);position:sticky;top:0;z-index:100}
+.header-top{display:flex;align-items:baseline;gap:16px;margin-bottom:12px}
+.logo{font-family:var(--serif);font-size:21px;font-weight:300;font-style:italic;color:#d8d8e8;letter-spacing:.02em}
+.logo-sub{font-size:9px;color:var(--text3);letter-spacing:.15em;text-transform:uppercase;margin-top:2px}
+.header-stats{margin-left:auto;display:flex;gap:18px;font-size:10px;color:var(--text3);letter-spacing:.08em}
+.stat-num{color:var(--text2)}
+.input-row{display:flex;gap:8px;align-items:center}
+#url-input{flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:12px;padding:8px 12px;outline:none;height:36px;transition:border-color .2s}
+#url-input:focus{border-color:var(--accent2)}
+#url-input::placeholder{color:var(--text3)}
+.search-input{background:var(--bg3);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:11px;padding:8px 12px;outline:none;height:36px;width:180px}
+.search-input::placeholder{color:var(--text3)}
+.add-btn{background:var(--accent2);color:#d0e4f0;border:none;font-family:var(--mono);font-size:11px;letter-spacing:.08em;padding:0 18px;cursor:pointer;height:36px;transition:background .15s;white-space:nowrap}
+.add-btn:hover{background:var(--accent)}
+.add-btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* SIDEBAR */
+.sidebar{width:196px;min-width:196px;border-right:1px solid var(--border);padding:12px 0;position:sticky;top:85px;height:calc(100vh - 85px);overflow-y:auto;background:var(--bg);flex-shrink:0}
+.cat-btn{display:flex;align-items:center;gap:8px;width:100%;padding:7px 16px;background:none;border:none;border-left:2px solid transparent;color:var(--text2);font-family:var(--mono);font-size:11px;cursor:pointer;text-align:left;transition:all .15s;letter-spacing:.04em}
+.cat-btn:hover{color:var(--text);background:var(--bg3)}
+.cat-btn.active{color:var(--text);background:var(--bg3);border-left-color:var(--cc,var(--accent))}
+.cat-icon{font-size:13px;width:16px;text-align:center;flex-shrink:0}
+.cat-count{margin-left:auto;font-size:9px;color:var(--text3);background:var(--bg4);padding:1px 5px}
+.sub-list{overflow:hidden;transition:max-height .25s ease;max-height:0}
+.sub-list.open{max-height:600px}
+.sub-btn{display:flex;align-items:center;gap:6px;width:100%;padding:4px 16px 4px 40px;background:none;border:none;border-left:2px solid transparent;color:var(--text3);font-family:var(--mono);font-size:10px;cursor:pointer;text-align:left;transition:all .15s}
+.sub-btn:hover{color:var(--text2)}
+.sub-btn.active{color:var(--text);border-left-color:var(--cc,var(--accent))}
+.sub-dot{width:4px;height:4px;border-radius:50%;background:currentColor;opacity:.5;flex-shrink:0}
+.sub-cnt{margin-left:auto;font-size:9px;color:var(--text3)}
+.sidebar-divider{height:1px;background:var(--border);margin:8px 16px}
+.io-row{display:flex;gap:6px;padding:10px 16px}
+.io-btn{font-size:9px;padding:3px 8px;background:none;border:1px solid var(--border);color:var(--text3);cursor:pointer;font-family:var(--mono);letter-spacing:.08em;transition:all .15s}
+.io-btn:hover{color:var(--text2);border-color:var(--border2)}
+
+/* CONTENT */
+.content{flex:1;padding:22px 28px;overflow-y:auto;min-width:0}
+.section-header{display:flex;align-items:baseline;gap:12px;margin-bottom:18px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.section-title{font-family:var(--serif);font-size:18px;font-weight:300;letter-spacing:.01em}
+.section-sub-label{font-size:10px;color:var(--text3);letter-spacing:.1em}
+.subsection{margin-bottom:28px}
+.sub-section-header{display:flex;align-items:center;gap:8px;margin-bottom:1px;padding:6px 0}
+.sub-section-title{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--text3)}
+.sub-section-line{flex:1;height:1px;background:var(--border)}
+.sub-section-cnt{font-size:9px;color:var(--text3)}
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:1px;background:var(--border)}
+
+/* CARD */
+.card{background:var(--bg2);padding:14px 15px;display:flex;flex-direction:column;gap:8px;transition:background .15s}
+.card:hover{background:var(--bg3)}
+.card.read{opacity:.42}
+.card.read .card-title{text-decoration:line-through;text-decoration-color:var(--text3)}
+.card-thumb{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:var(--bg4)}
+.card-thumb-ph{width:100%;aspect-ratio:16/9;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:26px;color:var(--text3);border:1px solid var(--border);font-family:var(--serif)}
+.card-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.card-type{font-size:9px;letter-spacing:.1em;text-transform:uppercase;padding:2px 5px;border:1px solid var(--border2);color:var(--text3)}
+.card-type.youtube{border-color:#7a2222;color:#b04444}
+.card-type.arxiv{border-color:#223366;color:#4466aa}
+.card-type.pdf{border-color:#224433;color:#448866}
+.card-type.github{border-color:#332244;color:#7755aa}
+.card-domain{font-size:10px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px}
+.card-title{font-family:var(--serif);font-size:13px;font-weight:300;color:var(--text);line-height:1.45;word-break:break-word}
+.card-url{font-size:10px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card-note-text{font-size:10px;color:var(--text3);font-style:italic;border-left:2px solid var(--border2);padding-left:8px;line-height:1.5}
+.card-note-area{background:var(--bg);border:1px solid var(--border);padding:6px 8px;font-family:var(--mono);font-size:10px;color:var(--text2);resize:none;outline:none;width:100%;min-height:52px}
+.card-note-area:focus{border-color:var(--border2)}
+.card-title-input{font-family:var(--serif);font-size:13px;font-weight:300;color:var(--text);line-height:1.45;background:var(--bg);border:1px solid var(--accent2);outline:none;padding:3px 6px;width:100%;resize:none;overflow:hidden}
+.card-actions{display:flex;gap:5px;margin-top:4px;flex-wrap:wrap}
+.card:hover .card-actions,.card-actions.always{opacity:1}
+.act{font-family:var(--mono);font-size:9px;letter-spacing:.06em;padding:3px 7px;background:none;border:1px solid var(--border2);color:var(--text3);cursor:pointer;transition:all .15s;text-decoration:none;display:inline-flex;align-items:center}
+.act:hover{color:var(--text);border-color:var(--text3)}
+.act.del:hover{color:#cc4444;border-color:#cc4444}
+.act.savenote{color:#5a8a5a;border-color:#2a4a2a}
+.act.savenote:hover{color:#7ab87a;border-color:#5a8a5a}
+
+/* MOVE MENU */
+.cat-menu{background:var(--bg4);border:1px solid var(--border2);padding:10px;margin-top:2px}
+.cat-menu-lbl{font-size:9px;color:var(--text3);letter-spacing:.12em;margin-bottom:6px}
+.cat-menu-grid{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
+.cmb{font-size:9px;padding:2px 7px;background:none;border:1px solid var(--border);color:var(--text3);cursor:pointer;font-family:var(--mono);transition:all .15s}
+.cmb.active{border-color:currentColor}
+.smb{font-size:9px;padding:2px 6px;background:none;border:1px solid var(--border);color:var(--text3);cursor:pointer;font-family:var(--mono);transition:all .15s}
+.smb:hover,.smb.active{color:var(--text2);border-color:var(--border2)}
+.sub-menu-grid{display:flex;flex-wrap:wrap;gap:3px}
+
+/* EMPTY */
+.empty{padding:60px 0;color:var(--text3);font-size:12px;font-style:italic;text-align:center;line-height:2.2}
+.empty-icon{font-size:36px;display:block;margin-bottom:12px;font-style:normal;font-family:var(--serif)}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--bg4);border:1px solid var(--border2);color:var(--text2);font-size:11px;padding:10px 16px;z-index:999;animation:fadeUp .2s ease;pointer-events:none;letter-spacing:.05em}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.spinner{display:inline-block;width:10px;height:10px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <div class="logo">phasespace</div>
+        <div class="logo-sub">personal reading archive</div>
+      </div>
+      <div class="header-stats">
+        <span><span class="stat-num" id="stat-total">0</span> items</span>
+        <span><span class="stat-num" id="stat-read">0</span> read</span>
+        <span><span class="stat-num" id="stat-unread">0</span> unread</span>
+      </div>
+    </div>
+    <div id="apikey-bar" style="display:none;align-items:center;gap:8px;margin-bottom:8px;padding:6px 10px;background:var(--bg4);border:1px solid var(--border);font-size:10px;color:var(--text3)">
+      <span style="letter-spacing:.08em">ANTHROPIC API KEY</span>
+      <input type="password" id="apikey-input" style="flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:11px;padding:4px 8px;outline:none;height:28px" placeholder="sk-ant-..." autocomplete="off">
+      <button onclick="saveApiKey()" style="background:var(--accent2);color:#d0e4f0;border:none;font-family:var(--mono);font-size:10px;padding:0 12px;cursor:pointer;height:28px">SAVE</button>
+      <button onclick="document.getElementById('apikey-bar').style.display='none'" style="background:none;border:1px solid var(--border);color:var(--text3);font-family:var(--mono);font-size:10px;padding:0 8px;cursor:pointer;height:28px">✕</button>
+    </div>
+    <div class="input-row">
+      <input type="text" id="url-input" placeholder="paste url(s) — auto-classified on add..." autocomplete="off" spellcheck="false">
+      <input type="text" id="search-input" class="search-input" placeholder="search..." autocomplete="off">
+      <button class="add-btn" id="add-btn">ADD →</button>
+      <button onclick="toggleApiKeyBar()" style="background:none;border:1px solid var(--border);color:var(--text3);font-family:var(--mono);font-size:10px;padding:0 10px;cursor:pointer;height:36px;white-space:nowrap" title="Set Anthropic API key for auto-classification">API KEY</button>
+    </div>
+  </div>
+  <div class="main">
+    <div class="sidebar" id="sidebar"></div>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+<div id="toast" class="toast" style="display:none"></div>
+<input type="file" id="import-file" accept=".json" style="display:none">
+
+<script>
+// ── CATEGORIES ───────────────────────────────────────────────────────────────
+const CATS = {
+  physics:          { label:'Physics',          icon:'⚛', color:'#7eb8d4', subs:['Quantum Computing','Particle Physics','Condensed Matter','Astrophysics','Quantum Field Theory','Statistical Mechanics','General Relativity','Optics & Photonics'] },
+  mathematics:      { label:'Mathematics',      icon:'∑', color:'#a8d8a0', subs:['Number Theory','Topology','Analysis','Algebra','Combinatorics','Probability & Statistics','Logic & Foundations','Differential Geometry'] },
+  computer_science: { label:'Computer Science', icon:'◈', color:'#c0a0d8', subs:['Machine Learning','Algorithms','Systems','Theoretical CS','Distributed Systems','Computer Vision','NLP','Cryptography','Databases'] },
+  philosophy:       { label:'Philosophy',       icon:'φ', color:'#e8c87a', subs:['Philosophy of Mind','Epistemology','Ethics','Metaphysics','Philosophy of Science','Logic','Political Philosophy','Aesthetics'] },
+  art:              { label:'Art & Culture',    icon:'◉', color:'#e8a87a', subs:['Visual Art','Music Theory','Literature','Film','Architecture','Design','History of Art','Digital Art'] },
+  economics:        { label:'Economics',        icon:'≋', color:'#7ab8b8', subs:['Microeconomics','Macroeconomics','Behavioral Economics','Game Theory','Finance','Political Economy','Development Economics','Econometrics'] },
+};
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let items        = JSON.parse(localStorage.getItem('kl_items')    || '[]');
+
+// ── MIGRATE old items: fix YouTube thumbs + stale titles ──────────────────────
+// Called after all helpers defined (ytId, titleFromUrl)
+function migrateItems() {
+  let changed = false;
+  items = items.map(it => {
+    const update = {};
+    // Upgrade YouTube thumbs to maxresdefault
+    if(it.type === 'youtube') {
+      const vid = ytId(it.url);
+      if(vid) {
+        const want = proxyThumb('https://img.youtube.com/vi/'+vid+'/sddefault.jpg');
+        if(!it.thumb || it.thumb.includes('maxresdefault') || it.thumb.includes('img.youtube.com')) { update.thumb = want; changed = true; }
+      }
+      // Flag bad YouTube titles so user knows to hit ↻
+      const badTitles = ['Unknown YouTube Video','unknown youtube video','youtube video'];
+      if(!it.title || badTitles.some(b => it.title.toLowerCase() === b.toLowerCase()) || it.title.startsWith('YouTube · ')) {
+        update.title = '[YouTube — click ↻ to fetch title]'; changed = true;
+      }
+    } else {
+      // For non-YT: fill missing/URL-derived titles from URL
+      const derivedTitle = titleFromUrl(it.url);
+      if(!it.title) { update.title = derivedTitle; changed = true; }
+    }
+    return Object.keys(update).length ? {...it, ...update} : it;
+  });
+  if(changed) localStorage.setItem('kl_items', JSON.stringify(items));
+}
+let expanded     = JSON.parse(localStorage.getItem('kl_expanded') || '{}');
+let activeCat    = 'all';
+let activeSub    = null;
+let searchQ      = '';
+let editNoteId   = null;
+let editTitleId  = null;
+let catMenuId    = null;
+let catMenuTmpCt = null;
+
+function save()    { localStorage.setItem('kl_items',    JSON.stringify(items)); }
+function saveExp() { localStorage.setItem('kl_expanded', JSON.stringify(expanded)); }
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+let _tt;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.display = 'block';
+  clearTimeout(_tt);
+  _tt = setTimeout(() => el.style.display = 'none', 2600);
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function uid()      { return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+function esc(s)     { if(!s)return''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function domain(u)  { try{ return new URL(u).hostname.replace('www.',''); }catch{ return u; } }
+function ytId(url)  { const m=url.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/); return m?m[1]:null; }
+
+
+// Proxy all thumbnail URLs through wsrv.nl to avoid CORS/hotlink blocks
+function proxyThumb(url) {
+  if(!url) return null;
+  // Already proxied
+  if(url.includes('wsrv.nl')) return url;
+  return 'https://wsrv.nl/?url=' + encodeURIComponent(url) + '&w=640&output=jpg&errorredirect=https%3A%2F%2Fwsrv.nl%2F1x1.png';
+}
+function detectType(url) {
+  if(!url) return 'link';
+  if(/youtube\.com|youtu\.be/.test(url)) return 'youtube';
+  if(/arxiv\.org/.test(url))             return 'arxiv';
+  if(/github\.com/.test(url))            return 'github';
+  if(/\.pdf(\?|$)|\/pdf\//.test(url))   return 'pdf';
+  return 'link';
+}
+
+// ── LLM-POWERED FETCH + CLASSIFY ─────────────────────────────────────────────
+// Calls Anthropic API to read page content and return structured metadata
+
+const VALID_CATS = Object.keys(CATS);
+const VALID_SUBS = Object.fromEntries(Object.entries(CATS).map(([k,v])=>[k,v.subs]));
+
+async function fetchAndClassify(url) {
+  const type    = detectType(url);
+  const vid     = type === 'youtube' ? ytId(url) : null;
+  const isArxiv = type === 'arxiv';
+  const apiKey  = localStorage.getItem('kl_apikey') || '';
+
+  let htmlTitle = null;
+  let ogImage   = null;
+
+  // ── YOUTUBE: oEmbed for real title + thumb ───────────────────────────────────
+  if(vid) {
+    ogImage = proxyThumb('https://img.youtube.com/vi/' + vid + '/sddefault.jpg');
+    try {
+      const r = await fetch('https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=' + vid + '&format=json', { signal: AbortSignal.timeout(5000) });
+      if(r.ok) { const d = await r.json(); htmlTitle = d.title || null; }
+    } catch {}
+  }
+
+  // ── ARXIV/GENERAL: try allorigins proxy for raw HTML/XML ────────────────────
+  let rawText = '';
+  if(!vid) {
+    // For arXiv use the Atom API endpoint; for others use the page URL directly
+    const fetchUrl = isArxiv
+      ? 'https://export.arxiv.org/api/query?id_list=' + (url.match(/arxiv\.org\/(?:abs|pdf)\/([0-9.v]+)/)?.[1] || '')
+      : url;
+
+    const proxies = [
+      { u: 'https://api.allorigins.win/get?url=' + encodeURIComponent(fetchUrl), json: true  },
+      { u: 'https://corsproxy.io/?' + encodeURIComponent(fetchUrl),              json: false },
+      { u: 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(fetchUrl), json: false },
+    ];
+
+    for(const proxy of proxies) {
+      try {
+        const r = await fetch(proxy.u, { signal: AbortSignal.timeout(7000) });
+        if(!r.ok) continue;
+        const body = proxy.json ? ((await r.json()).contents || '') : await r.text();
+        if(!body || body.length < 50) continue;
+
+        if(isArxiv) {
+          if(!body.includes('<entry>')) continue;
+          const entry    = (body.match(/<entry>[\s\S]*?<\/entry>/i) || [''])[0];
+          const titleM   = entry.match(/<title>([^<]{4,300})<\/title>/i);
+          const summaryM = entry.match(/<summary>([\s\S]{10,2000})<\/summary>/i);
+          const t = titleM?.[1]?.replace(/\s+/g,' ').replace(/&amp;/g,'&').trim();
+          if(t) { htmlTitle = t; rawText = summaryM?.[1]?.replace(/\s+/g,' ').trim().slice(0,1000) || ''; break; }
+        } else {
+          // General HTML — extract og:title, twitter:title, <title>
+          const ogTM = body.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']{2,300})["']/i)
+                    || body.match(/<meta[^>]+content=["']([^"']{2,300})["'][^>]+property=["']og:title["']/i);
+          const twTM = body.match(/<meta[^>]+(?:name|property)=["']twitter:title["'][^>]+content=["']([^"']{2,300})["']/i)
+                    || body.match(/<meta[^>]+content=["']([^"']{2,300})["'][^>]+(?:name|property)=["']twitter:title["']/i);
+          const ttlM = body.match(/<title[^>]*>([^<]{2,300})<\/title>/i);
+          const t    = (ogTM?.[1]) || (twTM?.[1]) || (ttlM?.[1]);
+          if(t) htmlTitle = t.replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/\s+/g,' ').trim();
+          const ogIM = body.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']{5,500})["']/i)
+                    || body.match(/<meta[^>]+content=["']([^"']{5,500})["'][^>]+property=["']og:image["']/i);
+          const twIM = body.match(/<meta[^>]+(?:name|property)=["']twitter:image(?::src)?["'][^>]+content=["']([^"']{5,500})["']/i)
+                    || body.match(/<meta[^>]+content=["']([^"']{5,500})["'][^>]+(?:name|property)=["']twitter:image(?::src)?["']/i);
+          const img  = (ogIM?.[1]) || (twIM?.[1]);
+          if(img && /^https?:\/\//.test(img)) ogImage = proxyThumb(img);
+          rawText = body.replace(/<script[\s\S]*?<\/script>/gi,'').replace(/<style[\s\S]*?<\/style>/gi,'')
+                        .replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').slice(0,2000).trim();
+          if(htmlTitle) break;
+        }
+      } catch(e) { console.warn('proxy failed:', proxy.u, e.message); }
+    }
+
+    // Microlink fallback for thumbnail on general pages
+    if(!ogImage && !isArxiv) {
+      try {
+        const r = await fetch('https://api.microlink.io/?url=' + encodeURIComponent(url), { signal: AbortSignal.timeout(5000) });
+        if(r.ok) { const d = await r.json(); if(d.status==='success') { const img=d.data?.image?.url||d.data?.screenshot?.url; if(img) ogImage=proxyThumb(img); } }
+      } catch {}
+    }
+  }
+
+  // ── LLM: use web_search tool so it can fetch the actual page ─────────────────
+  if(apiKey) {
+    // If we already have a good title + abstract, just classify (no search needed)
+    // If not, use web_search to fetch the real content
+    const hasContent = htmlTitle && rawText.length > 50;
+
+    const prompt = hasContent
+      ? `Classify this for a research library.
+URL: ${url}
+Title: ${htmlTitle}
+Abstract/content: ${rawText.slice(0,1500)}
+
+Pick the best category and subcategory. Respond ONLY with JSON:
+{"title":"${htmlTitle.replace(/"/g,"'")}","description":"1-2 sentence summary","category":"physics|mathematics|computer_science|philosophy|art|economics","subcategory":"best match or null"}`
+
+      : `Fetch and classify this URL for a research library: ${url}
+Use the web_search tool to look up this URL and find its title, abstract/description, and topic.
+Then respond ONLY with JSON (no other text):
+{"title":"exact title","description":"1-2 sentence summary","category":"physics|mathematics|computer_science|philosophy|art|economics","subcategory":"best match or null"}`;
+
+    const tools = hasContent ? [] : [{ type: 'web_search_20250305', name: 'web_search' }];
+    const validSubcats = 'physics: Quantum Computing|Particle Physics|Condensed Matter|Astrophysics|Quantum Field Theory|Statistical Mechanics|General Relativity|Optics & Photonics | math: Number Theory|Topology|Analysis|Algebra|Combinatorics|Probability & Statistics|Logic & Foundations|Differential Geometry | cs: Machine Learning|Algorithms|Systems|Theoretical CS|Distributed Systems|Computer Vision|NLP|Cryptography|Databases | philosophy: Philosophy of Mind|Epistemology|Ethics|Metaphysics|Philosophy of Science|Logic|Political Philosophy|Aesthetics | art: Visual Art|Music Theory|Literature|Film|Architecture|Design|History of Art|Digital Art | economics: Microeconomics|Macroeconomics|Behavioral Economics|Game Theory|Finance|Political Economy|Development Economics|Econometrics';
+
+    try {
+      const body = { model: 'claude-haiku-4-5-20251001', max_tokens: 800, messages: [{ role: 'user', content: prompt + (hasContent ? '\n\nValid subcategories — ' + validSubcats : '\n\nValid subcategories — ' + validSubcats) }] };
+      if(tools.length) body.tools = tools;
+
+      const r = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: JSON.stringify(body)
+      });
+      if(r.ok) {
+        const d = await r.json();
+        // Collect all text blocks (web_search may add tool_use + tool_result blocks before final text)
+        const textBlocks = (d.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n');
+        const jsonM = textBlocks.match(/\{[\s\S]*\}/);
+        if(jsonM) {
+          const p = JSON.parse(jsonM[0]);
+          return {
+            title:       htmlTitle || p.title || null,
+            description: p.description || null,
+            thumb:       ogImage || null,
+            cat:         VALID_CATS.includes(p.category) ? p.category : autoClassify(url, rawText, htmlTitle||'').cat,
+            sub:         (p.subcategory && VALID_SUBS[p.category]?.includes(p.subcategory)) ? p.subcategory : null,
+            type
+          };
+        }
+      }
+    } catch(e) { console.warn('LLM classify failed:', e); }
+  }
+
+  // ── FALLBACK: keyword classifier ─────────────────────────────────────────────
+  const kw = autoClassify(url, rawText.slice(0,300), htmlTitle || '');
+  return { title: htmlTitle || null, description: null, thumb: ogImage || null, cat: kw.cat, sub: kw.sub, type };
+}
+// Keep keyword classifier as fallback only
+function autoClassify(url, title, description) {
+  const t = (url + ' ' + (title||'') + ' ' + (description||'')).toLowerCase();
+  const rules = [
+    {c:'physics',s:'Quantum Computing',    kw:['quantum comput','qubit','quantum circuit','qiskit','quantum hardware','quantum information','quantum error']},
+    {c:'physics',s:'Particle Physics',     kw:['particle physics','cern','hadron','boson','quark','lepton','neutrino','higgs','lhc']},
+    {c:'physics',s:'Astrophysics',         kw:['astrophys','cosmolog','black hole','galaxy','telescope','gravitational wave','dark matter','dark energy']},
+    {c:'physics',s:'Quantum Field Theory', kw:['quantum field','qft','renormali','feynman diagram','path integral','gauge theory']},
+    {c:'physics',s:'General Relativity',   kw:['general relativ','einstein field','spacetime curvature','geodesic']},
+    {c:'physics',s:'Condensed Matter',     kw:['condensed matter','superconductor','topological insulator','solid state','spin liquid','mott insulator','band structure','graphene','strongly correlated','hubbard','kagome']},
+    {c:'physics',s:'Statistical Mechanics',kw:['statistical mechanic','thermodynamics','entropy','boltzmann','partition function','phase transition']},
+    {c:'computer_science',s:'Machine Learning',kw:['machine learning','neural network','deep learning','llm','transformer','openai','gpt','bert','reinforcement learning','pytorch','tensorflow']},
+    {c:'computer_science',s:'Algorithms',   kw:['algorithm','complexity','data structure','sorting','graph theory','dynamic programming']},
+    {c:'mathematics',s:'Probability & Statistics',kw:['probability','bayesian','statistics','stochastic','markov','monte carlo']},
+    {c:'mathematics',s:'Topology',          kw:['topology','manifold','homolog','homotopy','knot theory']},
+    {c:'philosophy',s:'Philosophy of Mind', kw:['consciousness','qualia','free will','cognition','phenomenology']},
+    {c:'philosophy',s:'Ethics',             kw:['ethics','morality','utilitarian','deontolog','effective altruism']},
+    {c:'economics',s:'Game Theory',         kw:['game theory','nash equilibrium','mechanism design']},
+    {c:'economics',s:'Behavioral Economics',kw:['behavioral economics','cognitive bias','kahneman','prospect theory']},
+  ];
+  for(const r of rules) if(r.kw.some(k => t.includes(k))) return {cat:r.c, sub:r.s};
+  if(/nature\.com|science\.org|cell\.com|pnas\.org|aps\.org/.test(url)) return {cat:'physics', sub:null};
+  if(/arxiv\.org\/abs\/cond-mat/.test(url)) return {cat:'physics', sub:'Condensed Matter'};
+  if(/arxiv\.org\/abs\/quant-ph/.test(url)) return {cat:'physics', sub:'Quantum Computing'};
+  if(/arxiv\.org\/abs\/hep/.test(url))      return {cat:'physics', sub:'Particle Physics'};
+  if(/arxiv\.org\/abs\/astro/.test(url))    return {cat:'physics', sub:'Astrophysics'};
+  if(/arxiv\.org\/abs\/cs\.(lg|ai|cl|cv)/i.test(url)) return {cat:'computer_science', sub:'Machine Learning'};
+  if(/arxiv\.org/.test(url))                return {cat:'physics', sub:null};
+  return {cat:'computer_science', sub:null};
+}
+
+// Extract a readable title guess from the URL itself as last resort
+function titleFromUrl(url) {
+  try {
+    const u = new URL(url);
+    // YouTube — don't parse the path, just say the channel/video placeholder
+    if(/youtube\.com|youtu\.be/.test(u.hostname)) {
+      const vid = ytId(url);
+      return vid ? 'YouTube · ' + vid : 'YouTube Video';
+    }
+    // arXiv — use the paper ID
+    const arxivM = url.match(/arxiv\.org\/(?:abs|pdf)\/([0-9.v]+)/);
+    if(arxivM) return 'arXiv:' + arxivM[1];
+    // GitHub — owner/repo
+    const ghParts = u.pathname.split('/').filter(Boolean);
+    if(/github\.com/.test(u.hostname) && ghParts.length >= 2) return ghParts[0]+'/'+ghParts[1];
+    // General — last meaningful path segment, title-cased
+    const parts = u.pathname.split('/').filter(Boolean);
+    if(parts.length) {
+      const last = parts[parts.length-1]
+        .replace(/[-_]/g,' ').replace(/\.\w+$/,'')
+        .replace(/\b\w/g, c => c.toUpperCase());
+      if(last.length > 3) return last;
+    }
+    return u.hostname.replace('www.','');
+  } catch { return url; }
+}
+
+// ── ADD ───────────────────────────────────────────────────────────────────────
+async function addLinks() {
+  const raw = document.getElementById('url-input').value.trim();
+  if(!raw) return;
+  const urls = raw.split(/\s+/).filter(s => /^https?:\/\//i.test(s));
+  if(!urls.length) { toast('no valid URLs found'); return; }
+
+  const btn = document.getElementById('add-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>fetching...';
+  document.getElementById('url-input').value = '';
+
+  let added = 0;
+  for(const url of urls) {
+    if(items.find(i => i.url === url)) continue;
+    const meta = await fetchAndClassify(url);
+    items.unshift({
+      id:          uid(),
+      url,
+      title:       meta.title       || titleFromUrl(url),
+      description: meta.description || null,
+      thumb:       meta.thumb       || null,
+      type:        meta.type,
+      cat:         meta.cat,
+      sub:         meta.sub,
+      read:        false,
+      note:        '',
+      addedAt:     Date.now(),
+    });
+    added++;
+  }
+  save();
+  btn.disabled = false;
+  btn.textContent = 'ADD →';
+  toast(added ? `added ${added} link${added > 1 ? 's' : ''}` : 'already in library');
+  render();
+}
+
+document.getElementById('url-input').addEventListener('keydown', e => { if(e.key === 'Enter') addLinks(); });
+document.getElementById('add-btn').addEventListener('click', addLinks);
+document.getElementById('search-input').addEventListener('input', e => { searchQ = e.target.value.toLowerCase(); render(); });
+
+// ── ACTIONS (via event delegation — no inline JS, no ID type-mismatch) ────────
+let _undoItem=null,_undoTimer=null;
+function deleteItem(id){
+  const item=items.find(i=>i.id===id); if(!item)return;
+  _undoItem=item; items=items.filter(i=>i.id!==id); save(); render();
+  clearTimeout(_undoTimer);
+  const el=document.getElementById("toast");
+  el.innerHTML='removed "' + item.title.slice(0,40) + '" <button onclick="undoDelete()" style="margin-left:8px;background:none;border:1px solid var(--border2);color:var(--accent);font-family:var(--mono);font-size:10px;padding:2px 6px;cursor:pointer">UNDO</button>';
+  el.style.display="block";
+  _undoTimer=setTimeout(()=>{el.style.display="none";_undoItem=null;},5000);
+}
+function undoDelete(){
+  if(!_undoItem)return; items.unshift(_undoItem); _undoItem=null;
+  clearTimeout(_undoTimer); document.getElementById("toast").style.display="none";
+  save(); render();
+}
+async function refreshMeta(id){
+  const item=items.find(i=>i.id===id); if(!item)return;
+  toast('fetching + classifying...');
+  const meta = await fetchAndClassify(item.url);
+  items=items.map(i=>i.id===id ? {
+    ...i,
+    title:       meta.title       || i.title,
+    description: meta.description || i.description,
+    thumb:       meta.thumb       || i.thumb,
+    cat:         meta.cat,
+    sub:         meta.sub,
+  } : i);
+  save(); render();
+  const label = CATS[meta.cat]?.label + (meta.sub ? ' › '+meta.sub : '');
+  toast('updated — ' + label);
+}
+function toggleRead(id){items=items.map(i=>i.id===id?{...i,read:!i.read}:i);save();render();}
+function openNote(id)      { editNoteId = editNoteId === id ? null : id; editTitleId = null; catMenuId = null; render(); }
+function saveNote(id)      { const ta = document.getElementById('noteta'); if(ta) { items = items.map(i => i.id === id ? {...i, note: ta.value} : i); save(); } editNoteId = null; render(); }
+function openEditTitle(id) { editTitleId = editTitleId === id ? null : id; editNoteId = null; catMenuId = null; render(); }
+function saveTitle(id)     { const ta = document.getElementById('titleta'); if(ta) { const v = ta.value.trim(); if(v) { items = items.map(i => i.id === id ? {...i, title: v} : i); save(); toast('title updated'); } } editTitleId = null; render(); }
+function openMove(id)     { if(catMenuId === id) { catMenuId = null; catMenuTmpCt = null; render(); return; } catMenuId = id; editNoteId = null; const it = items.find(i => i.id === id); catMenuTmpCt = it ? it.cat : null; render(); }
+function selectMoveCat(c) { catMenuTmpCt = c; render(); }
+function applyMove(id, cat, sub) { items = items.map(i => i.id === id ? {...i, cat, sub: sub || null} : i); save(); catMenuId = null; catMenuTmpCt = null; render(); }
+
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-a]');
+  if(!el) return;
+  const a   = el.dataset.a;
+  const id  = el.dataset.id  || null;
+  const cat = el.dataset.cat || null;
+  const sub = el.dataset.sub || null;
+  if(a === 'del')        deleteItem(id);
+  if(a === 'read')       toggleRead(id);
+  if(a === 'note')       openNote(id);
+  if(a === 'savenote')   saveNote(id);
+  if(a === 'edittitle')  openEditTitle(id);
+  if(a === 'savetitle')  saveTitle(id);
+  if(a === 'move')       openMove(id);
+  if(a === 'refresh')   refreshMeta(id);
+  if(a === 'mcat')      selectMoveCat(cat);
+  if(a === 'msub')      applyMove(id, cat, sub);
+  if(a === 'mnosub')    applyMove(id, cat, null);
+  if(a === 'setview')   setView(cat, sub);
+  if(a === 'togcat')    toggleCat(cat);
+  if(a === 'export')    exportData();
+  if(a === 'import')    document.getElementById('import-file').click();
+});
+
+// ── SIDEBAR ───────────────────────────────────────────────────────────────────
+function renderSidebar() {
+  const byCat = {}, bySub = {};
+  for(const it of items) {
+    byCat[it.cat] = (byCat[it.cat] || 0) + 1;
+    if(it.sub) { const k = it.cat+':'+it.sub; bySub[k] = (bySub[k]||0)+1; }
+  }
+  let h = '';
+  h += `<button class="cat-btn ${activeCat==='all'?'active':''}" style="--cc:#5a7fa8" data-a="setview" data-cat="all">
+    <span class="cat-icon">≡</span>All<span class="cat-count">${items.length}</span>
+  </button><div class="sidebar-divider"></div>`;
+  for(const [key,cat] of Object.entries(CATS)) {
+    const cnt  = byCat[key] || 0;
+    const open = expanded[key] || activeCat === key;
+    h += `<button class="cat-btn ${activeCat===key&&!activeSub?'active':''}" style="--cc:${cat.color}" data-a="togcat" data-cat="${key}">
+      <span class="cat-icon">${cat.icon}</span>${cat.label}<span class="cat-count">${cnt}</span>
+    </button><div class="sub-list ${open?'open':''}">`;
+    for(const sub of cat.subs) {
+      const sc = bySub[key+':'+sub] || 0;
+      h += `<button class="sub-btn ${activeCat===key&&activeSub===sub?'active':''}" style="--cc:${cat.color}" data-a="setview" data-cat="${key}" data-sub="${esc(sub)}">
+        <span class="sub-dot"></span>${esc(sub)}${sc?`<span class="sub-cnt">${sc}</span>`:''}
+      </button>`;
+    }
+    h += '</div>';
+  }
+  h += `<div class="sidebar-divider"></div><div class="io-row">
+    <button class="io-btn" data-a="export">EXPORT</button>
+    <button class="io-btn" data-a="import">IMPORT</button>
+  </div>`;
+  document.getElementById('sidebar').innerHTML = h;
+}
+
+// ── CARD ──────────────────────────────────────────────────────────────────────
+const TYPEICONS = {youtube:'▶', arxiv:'∫', pdf:'⊞', github:'⬡', link:'↗'};
+const TYPELBL   = {youtube:'video', arxiv:'arxiv', pdf:'pdf', github:'github', link:'link'};
+
+function renderCard(it) {
+  const dom     = domain(it.url);
+  const isNote  = editNoteId  === it.id;
+  const isMove  = catMenuId   === it.id;
+  const tmpCat  = catMenuTmpCt || it.cat;
+  const lbl     = TYPELBL[it.type] || 'link';
+  const icon    = TYPEICONS[it.type] || '↗';
+
+  // thumbnail — all served via wsrv.nl proxy to avoid CORS/hotlink blocks
+  const ytVid = it.type === 'youtube' ? ytId(it.url) : null;
+  const rawThumb = it.thumb || (ytVid ? proxyThumb('https://img.youtube.com/vi/'+ytVid+'/sddefault.jpg') : null);
+  const thumbSrc = rawThumb ? proxyThumb(rawThumb) : null;
+  const placeholderText = esc(it.title && it.title !== titleFromUrl(it.url) ? it.title.slice(0,80) : dom);
+
+  let thumbH = thumbSrc
+    ? `<img class="card-thumb" src="${esc(thumbSrc)}" alt="" loading="lazy"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+       <div class="card-thumb-ph" style="display:none">
+         <span style="font-size:11px;font-family:var(--mono);text-align:center;padding:0 14px;opacity:.6;line-height:1.5">${placeholderText}</span>
+       </div>`
+    : `<div class="card-thumb-ph">
+         <span style="font-size:11px;font-family:var(--mono);text-align:center;padding:0 14px;opacity:.5;line-height:1.5">${placeholderText}</span>
+       </div>`;
+
+  // note area
+  let noteH = '';
+  if(isNote)      noteH = `<textarea class="card-note-area" id="noteta" placeholder="add a note...">${esc(it.note)}</textarea>`;
+  else if(it.note) noteH = `<div class="card-note-text">${esc(it.note)}</div>`;
+
+  // move menu
+  let moveH = '';
+  if(isMove) {
+    const catBtns = Object.entries(CATS).map(([k,c]) =>
+      `<button class="cmb ${tmpCat===k?'active':''}" style="color:${c.color}" data-a="mcat" data-cat="${k}">${c.icon} ${c.label}</button>`
+    ).join('');
+    const subBtns = (CATS[tmpCat]||{subs:[]}).subs.map(s =>
+      `<button class="smb ${it.cat===tmpCat&&it.sub===s?'active':''}" data-a="msub" data-id="${it.id}" data-cat="${tmpCat}" data-sub="${esc(s)}">${esc(s)}</button>`
+    ).join('');
+    moveH = `<div class="cat-menu">
+      <div class="cat-menu-lbl">CATEGORY</div>
+      <div class="cat-menu-grid">${catBtns}</div>
+      ${subBtns?`<div class="cat-menu-lbl" style="margin-top:6px">SUBSECTION</div><div class="sub-menu-grid">${subBtns}</div>`:''}
+      <button class="act" style="margin-top:8px" data-a="mnosub" data-id="${it.id}" data-cat="${tmpCat}">NO SUBSECTION</button>
+    </div>`;
+  }
+
+  const noteBtn = isNote
+    ? `<button class="act savenote" data-a="savenote" data-id="${it.id}">SAVE NOTE</button>`
+    : `<button class="act" data-a="note" data-id="${it.id}">NOTE</button>`;
+
+  const isEditTitle = editTitleId === it.id;
+
+  const titleH = isEditTitle
+    ? `<textarea class="card-title-input" id="titleta" rows="2">${esc(it.title || '')}</textarea>`
+    : `<div class="card-title" style="cursor:text" data-a="edittitle" data-id="${it.id}" title="click to edit title">${esc(it.title || it.url)}</div>`;
+
+  return `<div class="card ${it.read?'read':''}">
+    ${thumbH}
+    <div class="card-meta">
+      <span class="card-type ${it.type}">${lbl}</span>
+      <span class="card-domain">${esc(dom)}</span>
+    </div>
+    ${titleH}
+    <div class="card-url">${esc(it.url)}</div>
+    ${noteH}${moveH}
+    <div class="card-actions">
+      <a href="${esc(it.url)}" target="_blank" rel="noopener noreferrer" class="act">OPEN ↗</a>
+      <button class="act" data-a="read" data-id="${it.id}">${it.read?'UNREAD':'MARK READ'}</button>
+      ${isEditTitle
+        ? `<button class="act savenote" data-a="savetitle" data-id="${it.id}">SAVE TITLE</button>`
+        : noteBtn}
+      <button class="act" data-a="move" data-id="${it.id}">MOVE</button>
+      <button class="act" data-a="refresh" data-id="${it.id}" title="re-fetch title &amp; thumbnail">↻</button>
+      <button class="act del" data-a="del" data-id="${it.id}">DEL</button>
+    </div>
+  </div>`;
+}
+
+// ── CONTENT ───────────────────────────────────────────────────────────────────
+function renderContent() {
+  let filtered = activeCat === 'all' ? [...items]
+    : activeSub ? items.filter(i => i.cat===activeCat && i.sub===activeSub)
+    : items.filter(i => i.cat===activeCat);
+
+  if(searchQ) filtered = filtered.filter(i =>
+    (i.title||'').toLowerCase().includes(searchQ) ||
+    (i.url||'').toLowerCase().includes(searchQ)   ||
+    (i.note||'').toLowerCase().includes(searchQ)  ||
+    (i.sub||'').toLowerCase().includes(searchQ)
+  );
+
+  const catColor = activeCat !== 'all' ? (CATS[activeCat]?.color||'#5a7fa8') : '#5a7fa8';
+  const titleTxt = activeCat === 'all' ? 'All Items' : activeSub ? activeSub : (CATS[activeCat]?.label||activeCat);
+
+  let h = `<div class="section-header">
+    <div class="section-title" style="color:${catColor}">${esc(titleTxt)}</div>
+    <div class="section-sub-label">${filtered.length} items${searchQ?' · filtered':''}</div>
+  </div>`;
+
+  if(!filtered.length) {
+    h += `<div class="empty"><span class="empty-icon">∅</span>
+      ${searchQ ? `no results for "${esc(searchQ)}"` : 'nothing here yet<br><span style="font-size:11px">paste a url above to add your first link</span>'}
+    </div>`;
+    document.getElementById('content').innerHTML = h;
+    return;
+  }
+
+  if(activeSub) {
+    h += '<div class="cards-grid">';
+    for(const it of filtered) h += renderCard(it);
+    h += '</div>';
+  } else {
+    const groups = {}, order = [];
+    for(const it of filtered) {
+      const k = it.sub || '__none__';
+      if(!groups[k]) { groups[k]=[]; order.push(k); }
+      groups[k].push(it);
+    }
+    for(const k of order) {
+      h += '<div class="subsection">';
+      if(k !== '__none__') h += `<div class="sub-section-header">
+        <div class="sub-section-title">${esc(k)}</div>
+        <div class="sub-section-line"></div>
+        <div class="sub-section-cnt">${groups[k].length}</div>
+      </div>`;
+      h += '<div class="cards-grid">';
+      for(const it of groups[k]) h += renderCard(it);
+      h += '</div></div>';
+    }
+  }
+
+  document.getElementById('content').innerHTML = h;
+
+  if(editNoteId) {
+    const ta = document.getElementById('noteta');
+    if(ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+  }
+  if(editTitleId) {
+    const ta = document.getElementById('titleta');
+    if(ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+  }
+}
+
+// ── STATS ─────────────────────────────────────────────────────────────────────
+function renderStats() {
+  document.getElementById('stat-total').textContent  = items.length;
+  document.getElementById('stat-read').textContent   = items.filter(i=>i.read).length;
+  document.getElementById('stat-unread').textContent = items.filter(i=>!i.read).length;
+}
+
+// ── NAV ───────────────────────────────────────────────────────────────────────
+function setView(cat, sub) {
+  activeCat = cat || 'all'; activeSub = sub || null;
+  catMenuId = null; editNoteId = null; editTitleId = null;
+  if(activeCat !== 'all') { expanded[activeCat]=true; saveExp(); }
+  render();
+}
+function toggleCat(key) {
+  if(activeCat === key) { expanded[key] = !expanded[key]; }
+  else { activeCat=key; activeSub=null; expanded[key]=true; }
+  catMenuId=null; editNoteId=null; editTitleId=null;
+  saveExp(); render();
+}
+
+// ── IMPORT / EXPORT ───────────────────────────────────────────────────────────
+function exportData() {
+  const blob = new Blob([JSON.stringify(items, null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='kl-backup.json'; a.click();
+  toast(`exported ${items.length} items`);
+}
+document.getElementById('import-file').addEventListener('change', e => {
+  const file = e.target.files[0]; if(!file) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if(!Array.isArray(data)) throw 0;
+      const existing = new Set(items.map(i=>i.url));
+      let added = 0;
+      for(const it of data) if(!existing.has(it.url)) { items.unshift(it); added++; }
+      save(); render(); toast(`imported ${added} new items`);
+    } catch { toast('invalid backup file'); }
+  };
+  r.readAsText(file);
+  e.target.value = '';
+});
+
+// ── API KEY ───────────────────────────────────────────────────────────────────
+function toggleApiKeyBar() {
+  const bar = document.getElementById('apikey-bar');
+  const showing = bar.style.display === 'flex';
+  bar.style.display = showing ? 'none' : 'flex';
+  if(!showing) {
+    const inp = document.getElementById('apikey-input');
+    inp.value = localStorage.getItem('kl_apikey') || '';
+    inp.focus();
+  }
+}
+function saveApiKey() {
+  const val = document.getElementById('apikey-input').value.trim();
+  if(val) { localStorage.setItem('kl_apikey', val); toast('API key saved — classifications will now use Claude'); }
+  else { localStorage.removeItem('kl_apikey'); toast('API key cleared'); }
+  document.getElementById('apikey-bar').style.display = 'none';
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+function render() { renderStats(); renderSidebar(); renderContent(); }
+migrateItems();
+render();
+</script>
+</body>
+</html>
