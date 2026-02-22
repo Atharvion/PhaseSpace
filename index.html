@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" sizes="32x32" href="favicon-32x32.png">
 <title>phasespace</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&family=IBM+Plex+Serif:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
 <style>
@@ -139,8 +138,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:15
       </div>
     </div>
     <div id="apikey-bar" style="display:none;align-items:center;gap:8px;margin-bottom:8px;padding:6px 10px;background:var(--bg4);border:1px solid var(--border);font-size:10px;color:var(--text3)">
-      <span style="letter-spacing:.08em">ANTHROPIC API KEY</span>
-      <input type="password" id="apikey-input" style="flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:11px;padding:4px 8px;outline:none;height:28px" placeholder="sk-ant-..." autocomplete="off">
+      <span style="letter-spacing:.08em">GROQ API KEY</span>
+      <input type="password" id="apikey-input" style="flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:11px;padding:4px 8px;outline:none;height:28px" placeholder="gsk_..." autocomplete="off">
       <button onclick="saveApiKey()" style="background:var(--accent2);color:#d0e4f0;border:none;font-family:var(--mono);font-size:10px;padding:0 12px;cursor:pointer;height:28px">SAVE</button>
       <button onclick="document.getElementById('apikey-bar').style.display='none'" style="background:none;border:1px solid var(--border);color:var(--text3);font-family:var(--mono);font-size:10px;padding:0 8px;cursor:pointer;height:28px">✕</button>
     </div>
@@ -163,7 +162,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:15
 <script>
 // ── CATEGORIES ───────────────────────────────────────────────────────────────
 const CATS = {
-  physics:          { label:'Physics',          icon:'⚛', color:'#7eb8d4', subs:['Quantum Computing','Quantum Mechanics','Particle Physics','Condensed Matter','Astrophysics','Quantum Field Theory','Statistical Mechanics','General Relativity','Optics & Photonics','Computational Physics'] },
+  physics:          { label:'Physics',          icon:'⚛', color:'#7eb8d4', subs:['Quantum Computing','Particle Physics','Condensed Matter','Astrophysics','Quantum Field Theory','Statistical Mechanics','General Relativity','Optics & Photonics'] },
   mathematics:      { label:'Mathematics',      icon:'∑', color:'#a8d8a0', subs:['Number Theory','Topology','Analysis','Algebra','Combinatorics','Probability & Statistics','Logic & Foundations','Differential Geometry'] },
   computer_science: { label:'Computer Science', icon:'◈', color:'#c0a0d8', subs:['Machine Learning','Algorithms','Systems','Theoretical CS','Distributed Systems','Computer Vision','NLP','Cryptography','Databases'] },
   philosophy:       { label:'Philosophy',       icon:'φ', color:'#e8c87a', subs:['Philosophy of Mind','Epistemology','Ethics','Metaphysics','Philosophy of Science','Logic','Political Philosophy','Aesthetics'] },
@@ -265,49 +264,41 @@ async function fetchAndClassify(url) {
   if(vid) {
     ogImage = proxyThumb('https://img.youtube.com/vi/' + vid + '/sddefault.jpg');
     try {
-      const r = await fetch('https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=' + vid + '&format=json');
+      const r = await fetch('https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=' + vid + '&format=json', { signal: AbortSignal.timeout(5000) });
       if(r.ok) { const d = await r.json(); htmlTitle = d.title || null; }
     } catch {}
   }
 
-  // ── ARXIV/GENERAL: fetch title + content for classification ──────────────────
+  // ── ARXIV/GENERAL: try allorigins proxy for raw HTML/XML ────────────────────
   let rawText = '';
   if(!vid) {
+    // For arXiv use the Atom API endpoint; for others use the page URL directly
     const fetchUrl = isArxiv
       ? 'https://export.arxiv.org/api/query?id_list=' + (url.match(/arxiv\.org\/(?:abs|pdf)\/([0-9.v]+)/)?.[1] || '')
       : url;
 
     const proxies = [
-      { u: 'https://corsproxy.io/?' + encodeURIComponent(fetchUrl),                   json: false },
-      { u: 'https://api.allorigins.win/get?url=' + encodeURIComponent(fetchUrl),      json: true  },
+      { u: 'https://api.allorigins.win/get?url=' + encodeURIComponent(fetchUrl), json: true  },
+      { u: 'https://corsproxy.io/?' + encodeURIComponent(fetchUrl),              json: false },
       { u: 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(fetchUrl), json: false },
     ];
 
     for(const proxy of proxies) {
       try {
-        const r = await fetch(proxy.u);
+        const r = await fetch(proxy.u, { signal: AbortSignal.timeout(7000) });
         if(!r.ok) continue;
         const body = proxy.json ? ((await r.json()).contents || '') : await r.text();
         if(!body || body.length < 50) continue;
 
         if(isArxiv) {
-          // Try Atom XML format first (from export.arxiv.org API)
-          if(body.includes('<entry>')) {
-            const entry    = (body.match(/<entry>[\s\S]*?<\/entry>/i) || [''])[0];
-            const titleM   = entry.match(/<title>([^<]{4,300})<\/title>/i);
-            const summaryM = entry.match(/<summary>([\s\S]{10,2000})<\/summary>/i);
-            const t = titleM?.[1]?.replace(/\s+/g,' ').replace(/&amp;/g,'&').trim();
-            if(t) { htmlTitle = t; rawText = summaryM?.[1]?.replace(/\s+/g,' ').trim().slice(0,1000) || ''; break; }
-          }
-          // Fallback: parse as HTML abs page (some proxies return this instead)
-          const ogTM = body.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']{2,300})["']/i)
-                    || body.match(/<meta[^>]+content=["']([^"']{2,300})["'][^>]+property=["']og:title["']/i);
-          const ttlM = body.match(/<title[^>]*>([^<]{2,300})<\/title>/i);
-          const h1M  = body.match(/<h1[^>]*class="[^"]*title[^"]*"[^>]*>[\s\S]*?<\/span>\s*([\s\S]{4,300}?)\s*<\/h1>/i);
-          const t    = (ogTM?.[1]) || (h1M?.[1]) || (ttlM?.[1]?.replace(/^\[.*?\]\s*/,''));
-          if(t) { htmlTitle = t.replace(/&amp;/g,'&').replace(/\s+/g,' ').trim(); break; }
-          // nothing found in this proxy, try next
+          if(!body.includes('<entry>')) continue;
+          const entry    = (body.match(/<entry>[\s\S]*?<\/entry>/i) || [''])[0];
+          const titleM   = entry.match(/<title>([^<]{4,300})<\/title>/i);
+          const summaryM = entry.match(/<summary>([\s\S]{10,2000})<\/summary>/i);
+          const t = titleM?.[1]?.replace(/\s+/g,' ').replace(/&amp;/g,'&').trim();
+          if(t) { htmlTitle = t; rawText = summaryM?.[1]?.replace(/\s+/g,' ').trim().slice(0,1000) || ''; break; }
         } else {
+          // General HTML — extract og:title, twitter:title, <title>
           const ogTM = body.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']{2,300})["']/i)
                     || body.match(/<meta[^>]+content=["']([^"']{2,300})["'][^>]+property=["']og:title["']/i);
           const twTM = body.match(/<meta[^>]+(?:name|property)=["']twitter:title["'][^>]+content=["']([^"']{2,300})["']/i)
@@ -328,70 +319,63 @@ async function fetchAndClassify(url) {
       } catch(e) { console.warn('proxy failed:', proxy.u, e.message); }
     }
 
+    // Microlink fallback for thumbnail on general pages
     if(!ogImage && !isArxiv) {
       try {
-        const r = await fetch('https://api.microlink.io/?url=' + encodeURIComponent(url));
+        const r = await fetch('https://api.microlink.io/?url=' + encodeURIComponent(url), { signal: AbortSignal.timeout(5000) });
         if(r.ok) { const d = await r.json(); if(d.status==='success') { const img=d.data?.image?.url||d.data?.screenshot?.url; if(img) ogImage=proxyThumb(img); } }
       } catch {}
     }
   }
 
-  // ── LLM CLASSIFY ─────────────────────────────────────────────────────────────
+  // ── LLM: use Groq for classification ─────────────────────────────────────────
   if(apiKey) {
-    const titleForPrompt = (htmlTitle || url).replace(/[^\x20-\x7E]/g, ' ').slice(0, 200);
-    const contentForPrompt = rawText.replace(/[^\x20-\x7E]/g, ' ').slice(0, 1500);
+    const validSubcats = 'physics: Quantum Computing|Particle Physics|Condensed Matter|Astrophysics|Quantum Field Theory|Statistical Mechanics|General Relativity|Optics & Photonics | math: Number Theory|Topology|Analysis|Algebra|Combinatorics|Probability & Statistics|Logic & Foundations|Differential Geometry | cs: Machine Learning|Algorithms|Systems|Theoretical CS|Distributed Systems|Computer Vision|NLP|Cryptography|Databases | philosophy: Philosophy of Mind|Epistemology|Ethics|Metaphysics|Philosophy of Science|Logic|Political Philosophy|Aesthetics | art: Visual Art|Music Theory|Literature|Film|Architecture|Design|History of Art|Digital Art | economics: Microeconomics|Macroeconomics|Behavioral Economics|Game Theory|Finance|Political Economy|Development Economics|Econometrics';
 
-    const contentLine = contentForPrompt ? ('Content: ' + contentForPrompt) : '';
-    const prompt = [
-      'You are classifying a link for a personal research library.',
-      'URL: ' + url,
-      'Title: ' + titleForPrompt,
-      contentLine,
-      'CATEGORIES (use exact spelling):',
-      'physics: Quantum Computing, Particle Physics, Condensed Matter, Astrophysics, Quantum Field Theory, Statistical Mechanics, General Relativity, Optics and Photonics',
-      'mathematics: Number Theory, Topology, Analysis, Algebra, Combinatorics, Probability and Statistics, Logic and Foundations, Differential Geometry',
-      'computer_science: Machine Learning, Algorithms, Systems, Theoretical CS, Distributed Systems, Computer Vision, NLP, Cryptography, Databases',
-      'philosophy: Philosophy of Mind, Epistemology, Ethics, Metaphysics, Philosophy of Science, Logic, Political Philosophy, Aesthetics',
-      'art: Visual Art, Music Theory, Literature, Film, Architecture, Design, History of Art, Digital Art',
-      'economics: Microeconomics, Macroeconomics, Behavioral Economics, Game Theory, Finance, Political Economy, Development Economics, Econometrics',
-      'Respond with ONLY valid JSON, no markdown: {"title":"...","description":"one sentence","category":"...","subcategory":"... or null}'
-    ].filter(Boolean).join('\n');
+    const prompt = `Classify this for a research library. Respond ONLY with JSON.
+URL: ${url}
+Title: ${htmlTitle || 'Unknown'}
+Abstract/content: ${rawText.slice(0,1800)}
+
+Valid subcategories — ${validSubcats}
+
+JSON format:
+{"title":"exact title","description":"1-2 sentence summary","category":"physics|mathematics|computer_science|philosophy|art|economics","subcategory":"best match or null"}`;
 
     try {
-      const reqBody = JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 300,
-          messages: [{ role: 'user', content: prompt }]
-        });
-        console.log('Sending to Claude:', reqBody.slice(0, 500));
-      const r = await fetch('https://api.anthropic.com/v1/messages', {
+      const body = {
+        model: "openai/gpt-oss-120b",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 1,
+        max_completion_tokens: 8192,
+        top_p: 1,
+        reasoning_effort: "medium"
+      };
+
+      const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true'
+          'Authorization': `Bearer ${apiKey}`
         },
-        body: reqBody
+        body: JSON.stringify(body)
       });
+
       if(r.ok) {
         const d = await r.json();
-        console.log('Claude raw response:', JSON.stringify(d.content));
-        const text = (d.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
-        const jsonM = text.match(/\{[\s\S]*\}/);
+        const content = d.choices[0].message.content;
+        const jsonM = content.match(/\{[\s\S]*\}/);
         if(jsonM) {
           const p = JSON.parse(jsonM[0]);
-          const cat = VALID_CATS.includes(p.category) ? p.category : null;
-          const sub = cat && p.subcategory && VALID_SUBS[cat]?.includes(p.subcategory) ? p.subcategory : null;
-          if(cat) {
-            console.log('Classified:', cat, '→', sub);
-            return { title: htmlTitle || p.title || null, description: p.description || null, thumb: ogImage || null, cat, sub, type };
-          }
+          return {
+            title:       htmlTitle || p.title || null,
+            description: p.description || null,
+            thumb:       ogImage || null,
+            cat:         VALID_CATS.includes(p.category) ? p.category : autoClassify(url, rawText, htmlTitle||"").cat,
+            sub:         (p.subcategory && VALID_SUBS[p.category]?.includes(p.subcategory)) ? p.subcategory : null,
+            type
+          };
         }
-        console.warn('Bad Claude response:', text);
-      } else {
-        const err = await r.text();
-        console.warn('Claude API error:', r.status, err);
       }
     } catch(e) { console.warn('LLM classify failed:', e); }
   }
@@ -801,7 +785,7 @@ function toggleApiKeyBar() {
 }
 function saveApiKey() {
   const val = document.getElementById('apikey-input').value.trim();
-  if(val) { localStorage.setItem('kl_apikey', val); toast('API key saved — classifications will now use Claude'); }
+  if(val) { localStorage.setItem('kl_apikey', val); toast('API key saved — classifications will now use Groq'); }
   else { localStorage.removeItem('kl_apikey'); toast('API key cleared'); }
   document.getElementById('apikey-bar').style.display = 'none';
 }
