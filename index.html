@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>phasespace</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&family=IBM+Plex+Serif:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<link id="favicon" rel="icon" type="image/svg+xml">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -28,6 +29,13 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:15
 .header-top{display:flex;align-items:baseline;gap:16px;margin-bottom:12px}
 .logo{font-family:var(--serif);font-size:24px;font-weight:300;font-style:italic;color:#d8d8e8;letter-spacing:.02em}
 .logo-sub{font-size:11px;color:var(--text3);letter-spacing:.15em;text-transform:uppercase;margin-top:2px}
+/* LOGO MARK */
+.logo-wrap{display:flex;align-items:center;gap:14px;cursor:pointer;text-decoration:none;user-select:none}
+.logo-wrap:hover .logo-svg-ring{opacity:.85}
+.logo-wrap:hover .logo-text{color:#eeeeff}
+.logo-svg{width:48px;height:48px;flex-shrink:0}
+.logo-text{font-family:var(--serif);font-size:24px;font-weight:300;font-style:italic;color:#d8d8e8;letter-spacing:.02em;line-height:1}
+.logo-sub{font-size:11px;color:var(--text3);letter-spacing:.15em;text-transform:uppercase;margin-top:3px}
 .header-stats{margin-left:auto;display:flex;gap:18px;font-size:12px;color:var(--text3);letter-spacing:.08em}
 .stat-num{color:var(--text2)}
 .input-row{display:flex;gap:8px;align-items:center}
@@ -48,7 +56,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:15
 .cat-icon{font-size:14px;width:18px;text-align:center;flex-shrink:0}
 .cat-count{margin-left:auto;font-size:11px;color:var(--text3);background:var(--bg4);padding:1px 5px}
 .sub-list{overflow:hidden;transition:max-height .25s ease;max-height:0}
-.sub-list.open{max-height:600px}
+.sub-list.open{max-height:800px}
 .sub-btn{display:flex;align-items:center;gap:6px;width:100%;padding:5px 16px 5px 40px;background:none;border:none;border-left:2px solid transparent;color:var(--text3);font-family:var(--mono);font-size:12px;cursor:pointer;text-align:left;transition:all .15s}
 .sub-btn:hover{color:var(--text2)}
 .sub-btn.active{color:var(--text);border-left-color:var(--cc,var(--accent))}
@@ -58,7 +66,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:15
 .io-row{display:flex;gap:6px;padding:10px 16px}
 .io-btn{font-size:11px;padding:4px 10px;background:none;border:1px solid var(--border);color:var(--text3);cursor:pointer;font-family:var(--mono);letter-spacing:.08em;transition:all .15s}
 .io-btn:hover{color:var(--text2);border-color:var(--border2)}
-/* drag handle */
 .sidebar-resizer{width:5px;flex-shrink:0;cursor:col-resize;background:transparent;transition:background .15s;position:relative;z-index:10}
 .sidebar-resizer:hover,.sidebar-resizer.dragging{background:var(--accent2)}
 
@@ -127,9 +134,38 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:15
 <div class="app">
   <div class="header">
     <div class="header-top">
-      <div>
-        <div class="logo">phasespace</div>
-        <div class="logo-sub">personal reading archive</div>
+      <div class="logo-wrap" onclick="setView('all',null)" title="all items">
+        <!-- Phase-space logo: orbiting electron paths around a nucleus -->
+        <svg class="logo-svg" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="core-g" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#a8d4f0"/>
+              <stop offset="100%" stop-color="#3a6a9a"/>
+            </radialGradient>
+            <radialGradient id="glow-g" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#5a9fcc" stop-opacity="0.35"/>
+              <stop offset="100%" stop-color="#5a9fcc" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <!-- ambient glow -->
+          <circle cx="24" cy="24" r="22" fill="url(#glow-g)"/>
+          <!-- orbit 1: horizontal ellipse -->
+          <ellipse cx="24" cy="24" rx="20" ry="6" stroke="#4a7fa8" stroke-width="0.9" stroke-opacity="0.7" fill="none"/>
+          <!-- orbit 2: tilted 60° -->
+          <ellipse cx="24" cy="24" rx="20" ry="6" stroke="#6a9fc8" stroke-width="0.9" stroke-opacity="0.55" fill="none" transform="rotate(60 24 24)"/>
+          <!-- orbit 3: tilted 120° -->
+          <ellipse cx="24" cy="24" rx="20" ry="6" stroke="#4a7fa8" stroke-width="0.9" stroke-opacity="0.55" fill="none" transform="rotate(120 24 24)"/>
+          <!-- nucleus -->
+          <circle cx="24" cy="24" r="3.5" fill="url(#core-g)"/>
+          <!-- electrons -->
+          <circle cx="44" cy="24" r="2" fill="#a8d8f0" opacity="0.9"/>
+          <circle cx="14" cy="14.6" r="2" fill="#a8d8f0" opacity="0.9" transform="rotate(60 24 24) translate(20,0) rotate(-60 24 24)"/>
+          <circle cx="14" cy="33.4" r="2" fill="#a8d8f0" opacity="0.9" transform="rotate(120 24 24) translate(20,0) rotate(-120 24 24)"/>
+        </svg>
+        <div>
+          <div class="logo-text">phasespace</div>
+          <div class="logo-sub">personal reading archive</div>
+        </div>
       </div>
       <div class="header-stats">
         <span><span class="stat-num" id="stat-total">0</span> items</span>
@@ -147,7 +183,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:15
       <input type="text" id="url-input" placeholder="paste url(s) — auto-classified on add..." autocomplete="off" spellcheck="false">
       <input type="text" id="search-input" class="search-input" placeholder="search..." autocomplete="off">
       <button class="add-btn" id="add-btn">ADD →</button>
-      <button onclick="toggleApiKeyBar()" style="background:none;border:1px solid var(--border);color:var(--text3);font-family:var(--mono);font-size:10px;padding:0 10px;cursor:pointer;height:36px;white-space:nowrap" title="Set Anthropic API key for auto-classification">API KEY</button>
+      <button onclick="toggleApiKeyBar()" style="background:none;border:1px solid var(--border);color:var(--text3);font-family:var(--mono);font-size:10px;padding:0 10px;cursor:pointer;height:36px;white-space:nowrap" title="Set Groq API key for auto-classification">API KEY</button>
     </div>
   </div>
   <div class="main">
@@ -162,37 +198,116 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:15
 <script>
 // ── CATEGORIES ───────────────────────────────────────────────────────────────
 const CATS = {
-  physics:          { label:'Physics',          icon:'⚛', color:'#7eb8d4', subs:['Quantum Computing','Particle Physics','Condensed Matter','Astrophysics','Quantum Field Theory','Statistical Mechanics','General Relativity','Optics & Photonics'] },
-  mathematics:      { label:'Mathematics',      icon:'∑', color:'#a8d8a0', subs:['Number Theory','Topology','Analysis','Algebra','Combinatorics','Probability & Statistics','Logic & Foundations','Differential Geometry'] },
-  computer_science: { label:'Computer Science', icon:'◈', color:'#c0a0d8', subs:['Machine Learning','Algorithms','Systems','Theoretical CS','Distributed Systems','Computer Vision','NLP','Cryptography','Databases'] },
-  philosophy:       { label:'Philosophy',       icon:'φ', color:'#e8c87a', subs:['Philosophy of Mind','Epistemology','Ethics','Metaphysics','Philosophy of Science','Logic','Political Philosophy','Aesthetics'] },
-  art:              { label:'Art & Culture',    icon:'◉', color:'#e8a87a', subs:['Visual Art','Music Theory','Literature','Film','Architecture','Design','History of Art','Digital Art'] },
-  economics:        { label:'Economics',        icon:'≋', color:'#7ab8b8', subs:['Microeconomics','Macroeconomics','Behavioral Economics','Game Theory','Finance','Political Economy','Development Economics','Econometrics'] },
+  physics:          { label:'Physics',            icon:'⚛', color:'#7eb8d4', subs:[
+    'Quantum Computing','Particle Physics','Condensed Matter','Astrophysics',
+    'Quantum Field Theory','Statistical Mechanics','General Relativity','Optics & Photonics',
+    'Plasma Physics','Nonlinear Dynamics & Chaos','Biophysics','Computational Physics',
+    'Nuclear Physics','Quantum Information','High Energy Physics','Atomic & Molecular Physics'
+  ]},
+  mathematics:      { label:'Mathematics',        icon:'∑', color:'#a8d8a0', subs:[
+    'Number Theory','Topology','Analysis','Algebra','Combinatorics',
+    'Probability & Statistics','Logic & Foundations','Differential Geometry',
+    'Category Theory','Complex Analysis','Functional Analysis','Numerical Methods',
+    'Dynamical Systems','Graph Theory','Set Theory','Mathematical Physics'
+  ]},
+  computer_science: { label:'Computer Science',   icon:'◈', color:'#c0a0d8', subs:[
+    'Machine Learning','Deep Learning','Algorithms','Systems','Theoretical CS',
+    'Distributed Systems','Computer Vision','NLP','Cryptography','Databases',
+    'Programming Languages','Compilers','Operating Systems','Computer Architecture',
+    'Human-Computer Interaction','Software Engineering','Robotics & Autonomous Systems',
+    'Information Theory','Quantum Computing'
+  ]},
+  ai_research:      { label:'AI Research',        icon:'◎', color:'#d8a0c0', subs:[
+    'Reinforcement Learning','Large Language Models','AI Alignment & Safety',
+    'Generative Models','AI Ethics','Interpretability & XAI','Multimodal AI',
+    'Neural Architecture','Optimization','Foundation Models','AI Policy',
+    'Neurosymbolic AI','Emergent Behavior','Embodied AI','Agents & Tool Use',
+    'AI for Science','Scaling Laws'
+  ]},
+  philosophy:       { label:'Philosophy',         icon:'φ', color:'#e8c87a', subs:[
+    'Philosophy of Mind','Epistemology','Ethics','Metaphysics','Philosophy of Science',
+    'Logic','Political Philosophy','Aesthetics','Philosophy of Language',
+    'Philosophy of Mathematics','Phenomenology','Existentialism','Eastern Philosophy',
+    'Analytic Tradition','Continental Tradition','Philosophy of AI','Philosophy of Physics'
+  ]},
+  politics_policy:  { label:'Politics & Policy',  icon:'⚖', color:'#d4886a', subs:[
+    'International Relations','Geopolitics','US Politics','Indian Politics',
+    'Comparative Politics','Public Policy','Tech Policy','Climate Policy',
+    'Economic Policy','Electoral Systems','Democracy & Authoritarianism',
+    'Political Theory','Governance','National Security','Foreign Policy',
+    'Nuclear Policy','AI Governance','Media & Disinformation','Human Rights',
+    'Global South','Institutions & State-Building'
+  ]},
+  history:          { label:'History & Society',  icon:'◷', color:'#c8a870', subs:[
+    'History of Science','Intellectual History','Modern History','Ancient History',
+    'Cold War','Colonial History','Social Movements','Historiography',
+    'History of Ideas','Indian History','Economic History','Military History',
+    'History of Technology','History of Mathematics','Sociology','Anthropology'
+  ]},
+  economics:        { label:'Economics',          icon:'≋', color:'#7ab8b8', subs:[
+    'Microeconomics','Macroeconomics','Behavioral Economics','Game Theory',
+    'Finance','Political Economy','Development Economics','Econometrics',
+    'Labor Economics','Industrial Organization','Public Finance',
+    'International Trade','Cryptocurrency & DeFi','Complexity Economics',
+    'Economic History','Mechanism Design'
+  ]},
+  biology:          { label:'Biology & Life Sci', icon:'⬡', color:'#90c88a', subs:[
+    'Neuroscience','Molecular Biology','Genetics & Genomics','Evolutionary Biology',
+    'Systems Biology','Computational Biology','Ecology','Cell Biology',
+    'Biochemistry','Cognitive Science','Pharmacology','Synthetic Biology',
+    'Astrobiology','Immunology','Structural Biology','Origin of Life'
+  ]},
+  art:              { label:'Art & Culture',      icon:'◉', color:'#e8a87a', subs:[
+    'Visual Art','Music Theory','Literature','Film','Architecture','Design',
+    'History of Art','Digital Art','Music & Composition','Speculative Fiction',
+    'Game Design','Photography','Poetry','Cultural Criticism','Animation'
+  ]},
+  engineering:      { label:'Engineering',        icon:'⚙', color:'#a0b8d0', subs:[
+    'Electrical Engineering','Materials Science','Mechanical Engineering',
+    'Aerospace','Biomedical Engineering','Energy Systems','Nanotechnology',
+    'Signal Processing','Control Theory','Photonics','Semiconductor Physics',
+    'Civil Engineering','Chemical Engineering','Quantum Engineering'
+  ]},
+  chemistry:        { label:'Chemistry',          icon:'⬟', color:'#c8d870', subs:[
+    'Organic Chemistry','Inorganic Chemistry','Physical Chemistry',
+    'Quantum Chemistry','Computational Chemistry','Thermochemistry',
+    'Electrochemistry','Spectroscopy','Reaction Mechanisms','Polymer Chemistry',
+    'Biochemistry','Catalysis','Materials Chemistry','Green Chemistry',
+    'Astrochemistry','Photochemistry','Nuclear Chemistry'
+  ]},
+  psychology:       { label:'Psychology',         icon:'ψ', color:'#c8a0d8', subs:[
+    'Cognitive Psychology','Social Psychology','Clinical Psychology',
+    'Developmental Psychology','Neuropsychology','Behavioral Psychology',
+    'Psychophysics','Perception & Attention','Memory & Learning',
+    'Motivation & Emotion','Personality','Psychopathology',
+    'Positive Psychology','Health Psychology','Evolutionary Psychology',
+    'Judgment & Decision Making','Consciousness','Psychology of Creativity'
+  ]},
+  miscellaneous:    { label:'Miscellaneous',      icon:'∞', color:'#888898', subs:[
+    'Essays & Long Reads','Interviews','Biographies','Newsletters',
+    'Tools & Productivity','Reference & Docs','Talks & Lectures',
+    'Ideas & Speculation','Books & Reading Lists','To Categorize'
+  ]},
 };
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 let items        = JSON.parse(localStorage.getItem('kl_items')    || '[]');
 
-// ── MIGRATE old items: fix YouTube thumbs + stale titles ──────────────────────
-// Called after all helpers defined (ytId, titleFromUrl)
 function migrateItems() {
   let changed = false;
   items = items.map(it => {
     const update = {};
-    // Upgrade YouTube thumbs to maxresdefault
     if(it.type === 'youtube') {
       const vid = ytId(it.url);
       if(vid) {
         const want = proxyThumb('https://img.youtube.com/vi/'+vid+'/sddefault.jpg');
         if(!it.thumb || it.thumb.includes('maxresdefault') || it.thumb.includes('img.youtube.com')) { update.thumb = want; changed = true; }
       }
-      // Flag bad YouTube titles so user knows to hit ↻
       const badTitles = ['Unknown YouTube Video','unknown youtube video','youtube video'];
       if(!it.title || badTitles.some(b => it.title.toLowerCase() === b.toLowerCase()) || it.title.startsWith('YouTube · ')) {
         update.title = '[YouTube — click ↻ to fetch title]'; changed = true;
       }
     } else {
-      // For non-YT: fill missing/URL-derived titles from URL
       const derivedTitle = titleFromUrl(it.url);
       if(!it.title) { update.title = derivedTitle; changed = true; }
     }
@@ -200,6 +315,7 @@ function migrateItems() {
   });
   if(changed) localStorage.setItem('kl_items', JSON.stringify(items));
 }
+
 let expanded     = JSON.parse(localStorage.getItem('kl_expanded') || '{}');
 let activeCat    = 'all';
 let activeSub    = null;
@@ -228,11 +344,8 @@ function esc(s)     { if(!s)return''; return String(s).replace(/&/g,'&amp;').rep
 function domain(u)  { try{ return new URL(u).hostname.replace('www.',''); }catch{ return u; } }
 function ytId(url)  { const m=url.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/); return m?m[1]:null; }
 
-
-// Proxy all thumbnail URLs through wsrv.nl to avoid CORS/hotlink blocks
 function proxyThumb(url) {
   if(!url) return null;
-  // Already proxied
   if(url.includes('wsrv.nl')) return url;
   return 'https://wsrv.nl/?url=' + encodeURIComponent(url) + '&w=640&output=jpg&errorredirect=https%3A%2F%2Fwsrv.nl%2F1x1.png';
 }
@@ -246,8 +359,6 @@ function detectType(url) {
 }
 
 // ── LLM-POWERED FETCH + CLASSIFY ─────────────────────────────────────────────
-// Calls Anthropic API to read page content and return structured metadata
-
 const VALID_CATS = Object.keys(CATS);
 const VALID_SUBS = Object.fromEntries(Object.entries(CATS).map(([k,v])=>[k,v.subs]));
 
@@ -260,7 +371,6 @@ async function fetchAndClassify(url) {
   let htmlTitle = null;
   let ogImage   = null;
 
-  // ── YOUTUBE: oEmbed for real title + thumb ───────────────────────────────────
   if(vid) {
     ogImage = proxyThumb('https://img.youtube.com/vi/' + vid + '/sddefault.jpg');
     try {
@@ -269,10 +379,8 @@ async function fetchAndClassify(url) {
     } catch {}
   }
 
-  // ── ARXIV/GENERAL: try allorigins proxy for raw HTML/XML ────────────────────
   let rawText = '';
   if(!vid) {
-    // For arXiv use the Atom API endpoint; for others use the page URL directly
     const fetchUrl = isArxiv
       ? 'https://export.arxiv.org/api/query?id_list=' + (url.match(/arxiv\.org\/(?:abs|pdf)\/([0-9.v]+)/)?.[1] || '')
       : url;
@@ -298,7 +406,6 @@ async function fetchAndClassify(url) {
           const t = titleM?.[1]?.replace(/\s+/g,' ').replace(/&amp;/g,'&').trim();
           if(t) { htmlTitle = t; rawText = summaryM?.[1]?.replace(/\s+/g,' ').trim().slice(0,1000) || ''; break; }
         } else {
-          // General HTML — extract og:title, twitter:title, <title>
           const ogTM = body.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']{2,300})["']/i)
                     || body.match(/<meta[^>]+content=["']([^"']{2,300})["'][^>]+property=["']og:title["']/i);
           const twTM = body.match(/<meta[^>]+(?:name|property)=["']twitter:title["'][^>]+content=["']([^"']{2,300})["']/i)
@@ -319,7 +426,6 @@ async function fetchAndClassify(url) {
       } catch(e) { console.warn('proxy failed:', proxy.u, e.message); }
     }
 
-    // Microlink fallback for thumbnail on general pages
     if(!ogImage && !isArxiv) {
       try {
         const r = await fetch('https://api.microlink.io/?url=' + encodeURIComponent(url), { signal: AbortSignal.timeout(5000) });
@@ -328,19 +434,18 @@ async function fetchAndClassify(url) {
     }
   }
 
-  // ── LLM: use Groq for classification ─────────────────────────────────────────
   if(apiKey) {
-    const validSubcats = 'physics: Quantum Computing|Particle Physics|Condensed Matter|Astrophysics|Quantum Field Theory|Statistical Mechanics|General Relativity|Optics & Photonics | math: Number Theory|Topology|Analysis|Algebra|Combinatorics|Probability & Statistics|Logic & Foundations|Differential Geometry | cs: Machine Learning|Algorithms|Systems|Theoretical CS|Distributed Systems|Computer Vision|NLP|Cryptography|Databases | philosophy: Philosophy of Mind|Epistemology|Ethics|Metaphysics|Philosophy of Science|Logic|Political Philosophy|Aesthetics | art: Visual Art|Music Theory|Literature|Film|Architecture|Design|History of Art|Digital Art | economics: Microeconomics|Macroeconomics|Behavioral Economics|Game Theory|Finance|Political Economy|Development Economics|Econometrics';
-
+    const validSubcats = Object.entries(CATS).map(([k,v]) => k + ': ' + v.subs.join('|')).join(' | ');
     const prompt = `Classify this for a research library. Respond ONLY with JSON.
 URL: ${url}
 Title: ${htmlTitle || 'Unknown'}
 Abstract/content: ${rawText.slice(0,1800)}
 
+Valid categories: ${VALID_CATS.join('|')}
 Valid subcategories — ${validSubcats}
 
 JSON format:
-{"title":"exact title","description":"1-2 sentence summary","category":"physics|mathematics|computer_science|philosophy|art|economics","subcategory":"best match or null"}`;
+{"title":"exact title","description":"1-2 sentence summary","category":"one of the valid categories","subcategory":"best match or null"}`;
 
     try {
       const body = {
@@ -354,10 +459,7 @@ JSON format:
 
       const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
         body: JSON.stringify(body)
       });
 
@@ -380,29 +482,98 @@ JSON format:
     } catch(e) { console.warn('LLM classify failed:', e); }
   }
 
-  // ── FALLBACK: keyword classifier ─────────────────────────────────────────────
   const kw = autoClassify(url, rawText.slice(0,300), htmlTitle || '');
   return { title: htmlTitle || null, description: null, thumb: ogImage || null, cat: kw.cat, sub: kw.sub, type };
 }
-// Keep keyword classifier as fallback only
+
 function autoClassify(url, title, description) {
   const t = (url + ' ' + (title||'') + ' ' + (description||'')).toLowerCase();
   const rules = [
-    {c:'physics',s:'Quantum Computing',    kw:['quantum comput','qubit','quantum circuit','qiskit','quantum hardware','quantum information','quantum error']},
-    {c:'physics',s:'Particle Physics',     kw:['particle physics','cern','hadron','boson','quark','lepton','neutrino','higgs','lhc']},
-    {c:'physics',s:'Astrophysics',         kw:['astrophys','cosmolog','black hole','galaxy','telescope','gravitational wave','dark matter','dark energy']},
-    {c:'physics',s:'Quantum Field Theory', kw:['quantum field','qft','renormali','feynman diagram','path integral','gauge theory']},
-    {c:'physics',s:'General Relativity',   kw:['general relativ','einstein field','spacetime curvature','geodesic']},
-    {c:'physics',s:'Condensed Matter',     kw:['condensed matter','superconductor','topological insulator','solid state','spin liquid','mott insulator','band structure','graphene','strongly correlated','hubbard','kagome']},
-    {c:'physics',s:'Statistical Mechanics',kw:['statistical mechanic','thermodynamics','entropy','boltzmann','partition function','phase transition']},
-    {c:'computer_science',s:'Machine Learning',kw:['machine learning','neural network','deep learning','llm','transformer','openai','gpt','bert','reinforcement learning','pytorch','tensorflow']},
-    {c:'computer_science',s:'Algorithms',   kw:['algorithm','complexity','data structure','sorting','graph theory','dynamic programming']},
-    {c:'mathematics',s:'Probability & Statistics',kw:['probability','bayesian','statistics','stochastic','markov','monte carlo']},
-    {c:'mathematics',s:'Topology',          kw:['topology','manifold','homolog','homotopy','knot theory']},
-    {c:'philosophy',s:'Philosophy of Mind', kw:['consciousness','qualia','free will','cognition','phenomenology']},
-    {c:'philosophy',s:'Ethics',             kw:['ethics','morality','utilitarian','deontolog','effective altruism']},
-    {c:'economics',s:'Game Theory',         kw:['game theory','nash equilibrium','mechanism design']},
-    {c:'economics',s:'Behavioral Economics',kw:['behavioral economics','cognitive bias','kahneman','prospect theory']},
+    // Physics
+    {c:'physics',s:'Quantum Computing',          kw:['quantum comput','qubit','quantum circuit','qiskit','quantum hardware','quantum information','quantum error']},
+    {c:'physics',s:'Particle Physics',           kw:['particle physics','cern','hadron','boson','quark','lepton','neutrino','higgs','lhc']},
+    {c:'physics',s:'Astrophysics',               kw:['astrophys','cosmolog','black hole','galaxy','telescope','gravitational wave','dark matter','dark energy']},
+    {c:'physics',s:'Quantum Field Theory',       kw:['quantum field','qft','renormali','feynman diagram','path integral','gauge theory']},
+    {c:'physics',s:'General Relativity',         kw:['general relativ','einstein field','spacetime curvature','geodesic']},
+    {c:'physics',s:'Condensed Matter',           kw:['condensed matter','superconductor','topological insulator','solid state','spin liquid','mott insulator','band structure','graphene','strongly correlated','hubbard','kagome']},
+    {c:'physics',s:'Statistical Mechanics',      kw:['statistical mechanic','thermodynamics','entropy','boltzmann','partition function','phase transition']},
+    {c:'physics',s:'Nonlinear Dynamics & Chaos', kw:['chaos theory','nonlinear dynamics','bifurcation','strange attractor','lorenz']},
+    {c:'physics',s:'Biophysics',                 kw:['biophysics','protein folding','molecular motor','cell mechanics']},
+    {c:'physics',s:'Plasma Physics',             kw:['plasma physics','fusion','tokamak','magnetohydrodynamics','mhd']},
+    {c:'physics',s:'Nuclear Physics',            kw:['nuclear physics','nuclear reaction','fission','radioactive decay','isotope']},
+    // AI Research
+    {c:'ai_research',s:'Large Language Models',  kw:['llm','large language model','chatgpt','claude','gemini','llama','mistral','language model']},
+    {c:'ai_research',s:'AI Alignment & Safety',  kw:['ai alignment','ai safety','value alignment','corrigibility','reward hacking','existential risk','rlhf']},
+    {c:'ai_research',s:'Reinforcement Learning', kw:['reinforcement learning','reward function','q-learning','policy gradient','markov decision']},
+    {c:'ai_research',s:'Generative Models',      kw:['diffusion model','gan','generative model','stable diffusion','vae','flow model']},
+    {c:'ai_research',s:'Interpretability & XAI', kw:['interpretability','explainability','mechanistic interp','saliency','feature attribution']},
+    {c:'ai_research',s:'Foundation Models',      kw:['foundation model','pretrained','fine-tuning','transfer learning','bert','gpt-4']},
+    {c:'ai_research',s:'Scaling Laws',           kw:['scaling law','compute optimal','chinchilla','emergent abilities','model scale']},
+    // CS
+    {c:'computer_science',s:'Machine Learning',  kw:['machine learning','neural network','deep learning','pytorch','tensorflow','sklearn']},
+    {c:'computer_science',s:'Algorithms',        kw:['algorithm','complexity','data structure','sorting','graph theory','dynamic programming']},
+    {c:'computer_science',s:'Cryptography',      kw:['cryptography','encryption','zero knowledge','hash function','public key']},
+    {c:'computer_science',s:'NLP',               kw:['natural language processing','nlp','text classification','named entity','sentiment analysis']},
+    {c:'computer_science',s:'Computer Vision',   kw:['computer vision','image recognition','object detection','segmentation','opencv']},
+    {c:'computer_science',s:'Programming Languages', kw:['programming language','compiler','type system','functional programming','lambda calculus']},
+    // Mathematics
+    {c:'mathematics',s:'Probability & Statistics', kw:['probability','bayesian','statistics','stochastic','markov','monte carlo']},
+    {c:'mathematics',s:'Topology',               kw:['topology','manifold','homolog','homotopy','knot theory']},
+    {c:'mathematics',s:'Category Theory',        kw:['category theory','functor','monad','topos','morphism']},
+    {c:'mathematics',s:'Dynamical Systems',      kw:['dynamical system','ergodic','flow','attractor','stability analysis']},
+    {c:'mathematics',s:'Number Theory',          kw:['number theory','prime','riemann','modular form','elliptic curve','diophantine']},
+    // Philosophy
+    {c:'philosophy',s:'Philosophy of Mind',      kw:['consciousness','qualia','free will','cognition','phenomenology','hard problem']},
+    {c:'philosophy',s:'Ethics',                  kw:['ethics','morality','utilitarian','deontolog','effective altruism']},
+    {c:'philosophy',s:'Philosophy of AI',        kw:['philosophy of ai','machine consciousness','chinese room','turing test','artificial general']},
+    {c:'philosophy',s:'Philosophy of Physics',   kw:['philosophy of physics','quantum interpretation','many worlds','pilot wave','arrow of time']},
+    {c:'philosophy',s:'Philosophy of Science',   kw:['philosophy of science','falsifiability','kuhn','popper','scientific method']},
+    // Politics & Policy
+    {c:'politics_policy',s:'AI Governance',      kw:['ai governance','ai regulation','ai act','ai policy','algorithmic accountability']},
+    {c:'politics_policy',s:'Tech Policy',        kw:['tech policy','digital policy','data privacy','antitrust tech','platform regulation','gdpr']},
+    {c:'politics_policy',s:'Geopolitics',        kw:['geopolitics','international relations','great power','nato','china us','indo-pacific']},
+    {c:'politics_policy',s:'Climate Policy',     kw:['climate policy','carbon tax','paris agreement','net zero','climate legislation']},
+    {c:'politics_policy',s:'Nuclear Policy',     kw:['nuclear policy','arms control','nonproliferation','nuclear deterrence']},
+    {c:'politics_policy',s:'Democracy & Authoritarianism', kw:['democracy','authoritarianism','autocracy','democratic backsliding','election integrity']},
+    {c:'politics_policy',s:'Indian Politics',    kw:['indian politics','bjp','congress party','modi','lok sabha','indian election']},
+    {c:'politics_policy',s:'Media & Disinformation', kw:['misinformation','disinformation','propaganda','media literacy','fake news']},
+    // Economics
+    {c:'economics',s:'Game Theory',              kw:['game theory','nash equilibrium','mechanism design']},
+    {c:'economics',s:'Behavioral Economics',     kw:['behavioral economics','cognitive bias','kahneman','prospect theory']},
+    {c:'economics',s:'Cryptocurrency & DeFi',    kw:['cryptocurrency','bitcoin','ethereum','defi','blockchain economics','web3']},
+    // Biology
+    {c:'biology',s:'Neuroscience',               kw:['neuroscience','neuron','synapse','neural circuit','brain imaging','fmri','eeg']},
+    {c:'biology',s:'Genetics & Genomics',        kw:['genetics','genomics','crispr','dna','rna','gene editing','sequencing']},
+    {c:'biology',s:'Cognitive Science',          kw:['cognitive science','cognition','perception','memory','learning','decision making']},
+    {c:'biology',s:'Evolutionary Biology',       kw:['evolution','natural selection','fitness landscape','phylogenetics','speciation']},
+    {c:'biology',s:'Computational Biology',      kw:['computational biology','bioinformatics','protein structure','alphafold','genomic data']},
+    // Engineering
+    {c:'engineering',s:'Semiconductor Physics',  kw:['semiconductor','transistor','chip design','vlsi','mosfet','integrated circuit']},
+    {c:'engineering',s:'Energy Systems',         kw:['solar energy','battery','energy storage','grid','renewable energy']},
+    {c:'engineering',s:'Signal Processing',      kw:['signal processing','fourier','wavelet','filter','dsp','fft']},
+    {c:'engineering',s:'Photonics',              kw:['photonics','laser','optical fiber','nonlinear optics','silicon photonics']},
+    // History
+    {c:'history',s:'History of Science',         kw:['history of science','scientific revolution','copernican','darwin history','newton history']},
+    {c:'history',s:'Indian History',             kw:['indian history','mughal','british india','independence movement','partition india']},
+    {c:'history',s:'History of Mathematics',     kw:['history of mathematics','euclid history','gauss history','hilbert history']},
+    // Chemistry
+    {c:'chemistry',s:'Organic Chemistry',        kw:['organic chemistry','synthesis','organic reaction','carbonyl','benzene','aromatic','stereochemistry']},
+    {c:'chemistry',s:'Quantum Chemistry',        kw:['quantum chemistry','molecular orbital','density functional','dft','schrödinger equation molecule','wavefunction chemistry']},
+    {c:'chemistry',s:'Computational Chemistry',  kw:['computational chemistry','molecular dynamics','force field','molecular simulation','gaussian','orca software']},
+    {c:'chemistry',s:'Physical Chemistry',       kw:['physical chemistry','chemical kinetics','thermochemistry','electrochemistry','spectroscopy','photochemistry']},
+    {c:'chemistry',s:'Catalysis',                kw:['catalysis','catalyst','enzyme kinetics','heterogeneous catalysis','homogeneous catalysis']},
+    {c:'chemistry',s:'Materials Chemistry',      kw:['materials chemistry','crystal structure','solid state chemistry','zeolite','metal organic framework','mof']},
+    {c:'chemistry',s:'Biochemistry',             kw:['biochemistry','metabolism','enzyme','atp','protein structure','metabolomics','lipid']},
+    {c:'chemistry',s:'Spectroscopy',             kw:['spectroscopy','nmr','mass spectrometry','infrared','raman spectroscopy','x-ray crystallography']},
+    // Psychology
+    {c:'psychology',s:'Cognitive Psychology',     kw:['cognitive psychology','working memory','attention','executive function','mental representation']},
+    {c:'psychology',s:'Social Psychology',        kw:['social psychology','conformity','group dynamics','social influence','obedience','prejudice']},
+    {c:'psychology',s:'Neuropsychology',          kw:['neuropsychology','brain lesion','case study patient','hemispheric','cortical function']},
+    {c:'psychology',s:'Judgment & Decision Making', kw:['judgment','decision making','heuristics','cognitive bias','dual process','kahneman','tversky','nudge']},
+    {c:'psychology',s:'Psychopathology',          kw:['depression','anxiety disorder','schizophrenia','bipolar','ptsd','adhd','autism','mental illness','dsm']},
+    {c:'psychology',s:'Consciousness',            kw:['altered states','meditation','sleep','dreaming','psychedelic','mindfulness','global workspace']},
+    {c:'psychology',s:'Perception & Attention',   kw:['visual perception','auditory perception','attention blink','change blindness','illusion','sensory']},
+    {c:'psychology',s:'Evolutionary Psychology',  kw:['evolutionary psychology','kin selection','mating','parental investment','sexual selection psychology']},
   ];
   for(const r of rules) if(r.kw.some(k => t.includes(k))) return {cat:r.c, sub:r.s};
   if(/nature\.com|science\.org|cell\.com|pnas\.org|aps\.org/.test(url)) return {cat:'physics', sub:null};
@@ -410,27 +581,24 @@ function autoClassify(url, title, description) {
   if(/arxiv\.org\/abs\/quant-ph/.test(url)) return {cat:'physics', sub:'Quantum Computing'};
   if(/arxiv\.org\/abs\/hep/.test(url))      return {cat:'physics', sub:'Particle Physics'};
   if(/arxiv\.org\/abs\/astro/.test(url))    return {cat:'physics', sub:'Astrophysics'};
-  if(/arxiv\.org\/abs\/cs\.(lg|ai|cl|cv)/i.test(url)) return {cat:'computer_science', sub:'Machine Learning'};
+  if(/arxiv\.org\/abs\/cs\.(lg|ai|cl|cv)/i.test(url)) return {cat:'ai_research', sub:'Large Language Models'};
+  if(/arxiv\.org\/abs\/cs/.test(url))       return {cat:'computer_science', sub:null};
+  if(/arxiv\.org\/abs\/math/.test(url))     return {cat:'mathematics', sub:null};
   if(/arxiv\.org/.test(url))                return {cat:'physics', sub:null};
   return {cat:'computer_science', sub:null};
 }
 
-// Extract a readable title guess from the URL itself as last resort
 function titleFromUrl(url) {
   try {
     const u = new URL(url);
-    // YouTube — don't parse the path, just say the channel/video placeholder
     if(/youtube\.com|youtu\.be/.test(u.hostname)) {
       const vid = ytId(url);
       return vid ? 'YouTube · ' + vid : 'YouTube Video';
     }
-    // arXiv — use the paper ID
     const arxivM = url.match(/arxiv\.org\/(?:abs|pdf)\/([0-9.v]+)/);
     if(arxivM) return 'arXiv:' + arxivM[1];
-    // GitHub — owner/repo
     const ghParts = u.pathname.split('/').filter(Boolean);
     if(/github\.com/.test(u.hostname) && ghParts.length >= 2) return ghParts[0]+'/'+ghParts[1];
-    // General — last meaningful path segment, title-cased
     const parts = u.pathname.split('/').filter(Boolean);
     if(parts.length) {
       const last = parts[parts.length-1]
@@ -484,7 +652,7 @@ document.getElementById('url-input').addEventListener('keydown', e => { if(e.key
 document.getElementById('add-btn').addEventListener('click', addLinks);
 document.getElementById('search-input').addEventListener('input', e => { searchQ = e.target.value.toLowerCase(); render(); });
 
-// ── ACTIONS (via event delegation — no inline JS, no ID type-mismatch) ────────
+// ── ACTIONS ───────────────────────────────────────────────────────────────────
 let _undoItem=null,_undoTimer=null;
 function deleteItem(id){
   const item=items.find(i=>i.id===id); if(!item)return;
@@ -591,9 +759,7 @@ function renderCard(it) {
   const isMove  = catMenuId   === it.id;
   const tmpCat  = catMenuTmpCt || it.cat;
   const lbl     = TYPELBL[it.type] || 'link';
-  const icon    = TYPEICONS[it.type] || '↗';
 
-  // thumbnail — all served via wsrv.nl proxy to avoid CORS/hotlink blocks
   const ytVid = it.type === 'youtube' ? ytId(it.url) : null;
   const rawThumb = it.thumb || (ytVid ? proxyThumb('https://img.youtube.com/vi/'+ytVid+'/sddefault.jpg') : null);
   const thumbSrc = rawThumb ? proxyThumb(rawThumb) : null;
@@ -609,12 +775,10 @@ function renderCard(it) {
          <span style="font-size:11px;font-family:var(--mono);text-align:center;padding:0 14px;opacity:.5;line-height:1.5">${placeholderText}</span>
        </div>`;
 
-  // note area
   let noteH = '';
   if(isNote)      noteH = `<textarea class="card-note-area" id="noteta" placeholder="add a note...">${esc(it.note)}</textarea>`;
   else if(it.note) noteH = `<div class="card-note-text">${esc(it.note)}</div>`;
 
-  // move menu
   let moveH = '';
   if(isMove) {
     const catBtns = Object.entries(CATS).map(([k,c]) =>
@@ -795,7 +959,6 @@ function saveApiKey() {
   const resizer  = document.getElementById('sidebar-resizer');
   const sidebar  = document.getElementById('sidebar');
   const MIN_W = 120, MAX_W = 480;
-  // Restore saved width
   const saved = parseInt(localStorage.getItem('kl_sidebar_w'));
   if(saved && saved >= MIN_W && saved <= MAX_W) {
     document.documentElement.style.setProperty('--sidebar-w', saved + 'px');
@@ -829,6 +992,27 @@ function saveApiKey() {
 function render() { renderStats(); renderSidebar(); renderContent(); }
 migrateItems();
 render();
+
+// ── FAVICON: inline SVG matching the header logo ──────────────────────────────
+(function() {
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none'>
+    <defs>
+      <radialGradient id='cg' cx='50%' cy='50%' r='50%'>
+        <stop offset='0%' stop-color='%23a8d4f0'/>
+        <stop offset='100%' stop-color='%233a6a9a'/>
+      </radialGradient>
+    </defs>
+    <rect width='48' height='48' rx='10' fill='%230d0d0f'/>
+    <ellipse cx='24' cy='24' rx='20' ry='6' stroke='%234a7fa8' stroke-width='1.1' fill='none' opacity='0.8'/>
+    <ellipse cx='24' cy='24' rx='20' ry='6' stroke='%236a9fc8' stroke-width='1.1' fill='none' opacity='0.65' transform='rotate(60 24 24)'/>
+    <ellipse cx='24' cy='24' rx='20' ry='6' stroke='%234a7fa8' stroke-width='1.1' fill='none' opacity='0.65' transform='rotate(120 24 24)'/>
+    <circle cx='24' cy='24' r='3.8' fill='url(%23cg)'/>
+    <circle cx='44' cy='24' r='2.2' fill='%23a8d8f0' opacity='0.95'/>
+    <circle cx='14' cy='14.6' r='2.2' fill='%23a8d8f0' opacity='0.95' transform='rotate(60 24 24) translate(20,0) rotate(-60 24 24)'/>
+    <circle cx='14' cy='33.4' r='2.2' fill='%23a8d8f0' opacity='0.95' transform='rotate(120 24 24) translate(20,0) rotate(-120 24 24)'/>
+  </svg>`;
+  document.getElementById('favicon').href = 'data:image/svg+xml,' + svg;
+})();
 </script>
 </body>
 </html>
