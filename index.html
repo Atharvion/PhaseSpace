@@ -101,8 +101,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:15
 .card-note-area{background:var(--bg);border:1px solid var(--border);padding:6px 8px;font-family:var(--mono);font-size:12px;color:var(--text2);resize:none;outline:none;width:100%;min-height:52px}
 .card-note-area:focus{border-color:var(--border2)}
 .card-title-input{font-family:var(--serif);font-size:15px;font-weight:300;color:var(--text);line-height:1.45;background:var(--bg);border:1px solid var(--accent2);outline:none;padding:3px 6px;width:100%;resize:none;overflow:hidden}
-.card-actions{display:flex;gap:5px;margin-top:4px;flex-wrap:wrap}
-.card:hover .card-actions,.card-actions.always{opacity:1}
+.card-actions{display:flex;gap:5px;margin-top:4px;flex-wrap:wrap;max-height:0;overflow:hidden;transition:max-height .15s ease,opacity .15s ease;opacity:0}
+.card:hover .card-actions,.card-actions.always{max-height:80px;opacity:1}
 .act{font-family:var(--mono);font-size:11px;letter-spacing:.06em;padding:4px 8px;background:none;border:1px solid var(--border2);color:var(--text3);cursor:pointer;transition:all .15s;text-decoration:none;display:inline-flex;align-items:center}
 .act:hover{color:var(--text);border-color:var(--text3)}
 .act.del:hover{color:#cc4444;border-color:#cc4444}
@@ -174,8 +174,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:15
       </div>
     </div>
     <div id="apikey-bar" style="display:none;align-items:center;gap:8px;margin-bottom:8px;padding:6px 10px;background:var(--bg4);border:1px solid var(--border);font-size:10px;color:var(--text3)">
-      <span style="letter-spacing:.08em">GROQ API KEY</span>
-      <input type="password" id="apikey-input" style="flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:11px;padding:4px 8px;outline:none;height:28px" placeholder="gsk_..." autocomplete="off">
+      <span style="letter-spacing:.08em">GEMINI API KEY</span>
+      <input type="password" id="apikey-input" style="flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:11px;padding:4px 8px;outline:none;height:28px" placeholder="AIza..." autocomplete="off">
       <button onclick="saveApiKey()" style="background:var(--accent2);color:#d0e4f0;border:none;font-family:var(--mono);font-size:10px;padding:0 12px;cursor:pointer;height:28px">SAVE</button>
       <button onclick="document.getElementById('apikey-bar').style.display='none'" style="background:none;border:1px solid var(--border);color:var(--text3);font-family:var(--mono);font-size:10px;padding:0 8px;cursor:pointer;height:28px">✕</button>
     </div>
@@ -183,7 +183,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:15
       <input type="text" id="url-input" placeholder="paste url(s) — auto-classified on add..." autocomplete="off" spellcheck="false">
       <input type="text" id="search-input" class="search-input" placeholder="search..." autocomplete="off">
       <button class="add-btn" id="add-btn">ADD →</button>
-      <button onclick="toggleApiKeyBar()" style="background:none;border:1px solid var(--border);color:var(--text3);font-family:var(--mono);font-size:10px;padding:0 10px;cursor:pointer;height:36px;white-space:nowrap" title="Set Groq API key for auto-classification">API KEY</button>
+      <button onclick="toggleApiKeyBar()" style="background:none;border:1px solid var(--border);color:var(--text3);font-family:var(--mono);font-size:10px;padding:0 10px;cursor:pointer;height:36px;white-space:nowrap" title="Set Gemini API key for auto-classification">API KEY</button>
     </div>
   </div>
   <div class="main">
@@ -374,7 +374,9 @@ async function fetchAndClassify(url) {
   if(vid) {
     ogImage = proxyThumb('https://img.youtube.com/vi/' + vid + '/sddefault.jpg');
     try {
-      const r = await fetch('https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=' + vid + '&format=json', { signal: AbortSignal.timeout(5000) });
+      const _ac0 = new AbortController(); const _t0 = setTimeout(()=>_ac0.abort(),5000);
+      const r = await fetch('https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=' + vid + '&format=json', { signal: _ac0.signal });
+      clearTimeout(_t0);
       if(r.ok) { const d = await r.json(); htmlTitle = d.title || null; }
     } catch {}
   }
@@ -393,7 +395,9 @@ async function fetchAndClassify(url) {
 
     for(const proxy of proxies) {
       try {
-        const r = await fetch(proxy.u, { signal: AbortSignal.timeout(7000) });
+        const _ac = new AbortController(); const _t = setTimeout(()=>_ac.abort(),7000);
+        const r = await fetch(proxy.u, { signal: _ac.signal });
+        clearTimeout(_t);
         if(!r.ok) continue;
         const body = proxy.json ? ((await r.json()).contents || '') : await r.text();
         if(!body || body.length < 50) continue;
@@ -428,7 +432,9 @@ async function fetchAndClassify(url) {
 
     if(!ogImage && !isArxiv) {
       try {
-        const r = await fetch('https://api.microlink.io/?url=' + encodeURIComponent(url), { signal: AbortSignal.timeout(5000) });
+        const _acM = new AbortController(); const _tM = setTimeout(()=>_acM.abort(),5000);
+        const r = await fetch('https://api.microlink.io/?url=' + encodeURIComponent(url), { signal: _acM.signal });
+        clearTimeout(_tM);
         if(r.ok) { const d = await r.json(); if(d.status==='success') { const img=d.data?.image?.url||d.data?.screenshot?.url; if(img) ogImage=proxyThumb(img); } }
       } catch {}
     }
@@ -436,7 +442,7 @@ async function fetchAndClassify(url) {
 
   if(apiKey) {
     const validSubcats = Object.entries(CATS).map(([k,v]) => k + ': ' + v.subs.join('|')).join(' | ');
-    const prompt = `Classify this for a research library. Respond ONLY with JSON.
+    const prompt = `Classify this for a research library. Respond ONLY with JSON, no markdown, no backticks.
 URL: ${url}
 Title: ${htmlTitle || 'Unknown'}
 Abstract/content: ${rawText.slice(0,1800)}
@@ -448,24 +454,28 @@ JSON format:
 {"title":"exact title","description":"1-2 sentence summary","category":"one of the valid categories","subcategory":"best match or null"}`;
 
     try {
+      // Gemini 2.0 Flash API
+      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
       const body = {
-        model: "openai/gpt-oss-120b",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 1,
-        max_completion_tokens: 8192,
-        top_p: 1,
-        reasoning_effort: "medium"
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.2,
+          maxOutputTokens: 512,
+        }
       };
 
-      const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      const _acG = new AbortController(); const _tG = setTimeout(()=>_acG.abort(),15000);
+      const r = await fetch(geminiUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-        body: JSON.stringify(body)
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: _acG.signal
       });
+      clearTimeout(_tG);
 
       if(r.ok) {
         const d = await r.json();
-        const content = d.choices[0].message.content;
+        const content = d.candidates?.[0]?.content?.parts?.[0]?.text || '';
         const jsonM = content.match(/\{[\s\S]*\}/);
         if(jsonM) {
           const p = JSON.parse(jsonM[0]);
@@ -478,8 +488,12 @@ JSON format:
             type
           };
         }
+      } else {
+        const errBody = await r.json().catch(() => ({}));
+        console.warn('Gemini API error:', r.status, errBody?.error?.message);
+        toast('Gemini API error: ' + (errBody?.error?.message || r.status));
       }
-    } catch(e) { console.warn('LLM classify failed:', e); }
+    } catch(e) { console.warn('Gemini classify failed:', e); }
   }
 
   const kw = autoClassify(url, rawText.slice(0,300), htmlTitle || '');
@@ -737,7 +751,7 @@ function renderSidebar() {
     for(const sub of cat.subs) {
       const sc = bySub[key+':'+sub] || 0;
       h += `<button class="sub-btn ${activeCat===key&&activeSub===sub?'active':''}" style="--cc:${cat.color}" data-a="setview" data-cat="${key}" data-sub="${esc(sub)}">
-        <span class="sub-dot"></span>${esc(sub)}${sc?`<span class="sub-cnt">${sc}</span>`:''}
+        <span class="sub-dot"></span>${esc(sub)}${sc?('<span class="sub-cnt">'+sc+'</span>'):''}
       </button>`;
     }
     h += '</div>';
@@ -790,7 +804,7 @@ function renderCard(it) {
     moveH = `<div class="cat-menu">
       <div class="cat-menu-lbl">CATEGORY</div>
       <div class="cat-menu-grid">${catBtns}</div>
-      ${subBtns?`<div class="cat-menu-lbl" style="margin-top:6px">SUBSECTION</div><div class="sub-menu-grid">${subBtns}</div>`:''}
+      ${subBtns?('<div class="cat-menu-lbl" style="margin-top:6px">SUBSECTION</div><div class="sub-menu-grid">'+subBtns+'</div>'):''}
       <button class="act" style="margin-top:8px" data-a="mnosub" data-id="${it.id}" data-cat="${tmpCat}">NO SUBSECTION</button>
     </div>`;
   }
@@ -818,7 +832,7 @@ function renderCard(it) {
       <a href="${esc(it.url)}" target="_blank" rel="noopener noreferrer" class="act">OPEN ↗</a>
       <button class="act" data-a="read" data-id="${it.id}">${it.read?'UNREAD':'MARK READ'}</button>
       ${isEditTitle
-        ? `<button class="act savenote" data-a="savetitle" data-id="${it.id}">SAVE TITLE</button>`
+        ? ('<button class="act savenote" data-a="savetitle" data-id="'+it.id+'">SAVE TITLE</button>')
         : noteBtn}
       <button class="act" data-a="move" data-id="${it.id}">MOVE</button>
       <button class="act" data-a="refresh" data-id="${it.id}" title="re-fetch title &amp; thumbnail">↻</button>
@@ -850,7 +864,7 @@ function renderContent() {
 
   if(!filtered.length) {
     h += `<div class="empty"><span class="empty-icon">∅</span>
-      ${searchQ ? `no results for "${esc(searchQ)}"` : 'nothing here yet<br><span style="font-size:11px">paste a url above to add your first link</span>'}
+      ${searchQ ? ('no results for "' + esc(searchQ) + '"') : 'nothing here yet<br><span style="font-size:11px">paste a url above to add your first link</span>'}
     </div>`;
     document.getElementById('content').innerHTML = h;
     return;
@@ -949,7 +963,7 @@ function toggleApiKeyBar() {
 }
 function saveApiKey() {
   const val = document.getElementById('apikey-input').value.trim();
-  if(val) { localStorage.setItem('kl_apikey', val); toast('API key saved — classifications will now use Groq'); }
+  if(val) { localStorage.setItem('kl_apikey', val); toast('Gemini API key saved — classifications will now use Gemini 2.0 Flash'); }
   else { localStorage.removeItem('kl_apikey'); toast('API key cleared'); }
   document.getElementById('apikey-bar').style.display = 'none';
 }
